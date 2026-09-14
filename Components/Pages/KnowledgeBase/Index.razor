@@ -40,73 +40,80 @@
             </div>
         </div>
 
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <div class="list-group">
-                        <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(_selectedCategoryId is null ? "active" : "")"
-                                @onclick="() => SelectCategory(null)">
-                            <span><i class="ti ti-books me-1"></i>Toutes les catégories</span>
-                            <span class="badge bg-secondary-lt">@_visibleArticles.Count</span>
-                        </button>
+        <div class="glpi-kb-layout">
+            <div class="glpi-kb-categories">
+                <div class="list-group">
+                    <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(_selectedCategoryId is null ? "active" : "")"
+                            @onclick="() => SelectCategory(null)">
+                        <span><i class="ti ti-books me-1"></i>Toutes les catégories</span>
+                        <span class="badge bg-secondary-lt">@_visibleArticles.Count</span>
+                    </button>
 
-                        @foreach ((KnowledgeBaseCategory category, int depth) in _categoryTree)
-                        {
-                            <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(_selectedCategoryId == category.Id ? "active" : "")"
-                                    @onclick="() => SelectCategory(category.Id)">
-                                <span style="@($"padding-left: {depth * 1.1:0.##}rem;")">
-                                    <i class="ti ti-folder me-1"></i>@category.Name
-                                </span>
-                                <span class="badge bg-secondary-lt">@CountFor(category.Id)</span>
-                            </button>
-                        }
-
-                        @if (_uncategorizedCount > 0)
-                        {
-                            <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(_selectedCategoryId == UncategorizedId ? "active" : "")"
-                                    @onclick="() => SelectCategory(UncategorizedId)">
-                                <span><i class="ti ti-folder-off me-1"></i>Sans catégorie</span>
-                                <span class="badge bg-secondary-lt">@_uncategorizedCount</span>
-                            </button>
-                        }
-                    </div>
-                </div>
-
-                <div class="col-md-9">
-                    @if (_filtered.Count == 0)
+                    @foreach ((KnowledgeBaseCategory category, int depth) in _categoryTree)
                     {
-                        <div class="text-center text-secondary py-5">
-                            @if (_visibleArticles.Count == 0)
-                            {
-                                <div>La base de connaissances est vide.</div>
-                                <a href="/tools/knowledgebase/new" class="btn btn-primary mt-3">
-                                    <i class="ti ti-plus me-1"></i>Rédiger le premier article
-                                </a>
-                            }
-                            else
-                            {
-                                <div>Aucun article ne correspond à cette recherche.</div>
-                            }
-                        </div>
+                        <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(_selectedCategoryId == category.Id ? "active" : "")"
+                                @onclick="() => SelectCategory(category.Id)">
+                            <span style="@($"padding-left: {depth * 1.1:0.##}rem;")">
+                                <i class="ti ti-folder me-1"></i>@category.Name
+                            </span>
+                            <span class="badge bg-secondary-lt">@CountFor(category.Id)</span>
+                        </button>
+                    }
+
+                    @if (_uncategorizedCount > 0)
+                    {
+                        <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(_selectedCategoryId == UncategorizedId ? "active" : "")"
+                                @onclick="() => SelectCategory(UncategorizedId)">
+                            <span><i class="ti ti-folder-off me-1"></i>Sans catégorie</span>
+                            <span class="badge bg-secondary-lt">@_uncategorizedCount</span>
+                        </button>
+                    }
+                </div>
+            </div>
+
+            @if (_filtered.Count == 0)
+            {
+                <div class="flex-fill text-center text-secondary py-5">
+                    @if (_visibleArticles.Count == 0)
+                    {
+                        <div>La base de connaissances est vide.</div>
+                        <a href="/tools/knowledgebase/new" class="btn btn-primary mt-3">
+                            <i class="ti ti-plus me-1"></i>Rédiger le premier article
+                        </a>
                     }
                     else
                     {
-                        <div class="list-group">
+                        <div>Aucun article ne correspond à cette recherche.</div>
+                    }
+                </div>
+            }
+            else
+            {
+                @* .table-responsive et non un .list-group : c'est lui que le thème rend défilant
+                   (flex: 1 + overflow-y: auto, en-têtes collants), comme sur les autres listes. *@
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th>Sujet</th>
+                                <th style="width: 14rem;">Catégorie</th>
+                                <th style="width: 6rem;" class="text-end">Vues</th>
+                                <th style="width: 11rem;">Dernière modification</th>
+                            </tr>
+                        </thead>
+                        <tbody>
                             @foreach (KnowledgeBaseArticle article in _paged)
                             {
-                                <a href="/tools/knowledgebase/article/@article.Id" class="list-group-item list-group-item-action">
-                                    <div class="d-flex align-items-start justify-content-between gap-2">
-                                        <div class="flex-fill">
-                                            <div class="fw-semibold">
-                                                @if (article.IsPinned)
-                                                {
-                                                    <i class="ti ti-pin-filled text-secondary me-1" title="Épinglé"></i>
-                                                }
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            @if (article.IsPinned)
+                                            {
+                                                <i class="ti ti-pin-filled text-secondary" title="Épinglé"></i>
+                                            }
+                                            <a href="/tools/knowledgebase/article/@article.Id" class="fw-semibold text-reset">
                                                 @article.Subject
-                                            </div>
-                                            <div class="text-secondary small">@Excerpt(article)</div>
-                                        </div>
-                                        <div class="text-end text-nowrap">
+                                            </a>
                                             @if (article.IsFaq)
                                             {
                                                 <span class="badge bg-green-lt">FAQ</span>
@@ -125,53 +132,58 @@
                                                     <i class="ti ti-clock-off"></i>
                                                 </span>
                                             }
-                                            <div class="text-secondary small mt-1">
-                                                <i class="ti ti-folder me-1"></i>@(article.Category?.Name ?? "Sans catégorie")
-                                            </div>
-                                            <div class="text-secondary small">
-                                                <i class="ti ti-eye me-1"></i>@article.ViewCount
-                                                <span class="ms-2"><i class="ti ti-clock me-1"></i>@LastChange(article)</span>
-                                            </div>
                                         </div>
-                                    </div>
-                                </a>
+                                        <div class="text-secondary small">@Excerpt(article)</div>
+                                    </td>
+                                    <td class="text-secondary">
+                                        <i class="ti ti-folder me-1"></i>@(article.Category?.Name ?? "Sans catégorie")
+                                    </td>
+                                    <td class="text-secondary text-end">@article.ViewCount</td>
+                                    <td class="text-secondary text-nowrap">@LastChange(article)</td>
+                                </tr>
                             }
-                        </div>
-
-                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-3">
-                            <div class="d-flex align-items-center gap-2 text-secondary">
-                                <span>Éléments par page</span>
-                                <select class="form-select form-select-sm w-auto" value="@_pageSize"
-                                        @onchange="@((ChangeEventArgs e) => SetPageSize(int.Parse((string)e.Value!)))">
-                                    @foreach (int size in PageSizeOptions)
-                                    {
-                                        <option value="@size">@size</option>
-                                    }
-                                </select>
-                            </div>
-
-                            <div class="d-flex align-items-center gap-3">
-                                <span class="text-secondary">
-                                    @(((_currentPage - 1) * _pageSize) + 1)–@(Math.Min(_currentPage * _pageSize, _filtered.Count)) sur @_filtered.Count
-                                </span>
-                                <ul class="pagination pagination-sm m-0">
-                                    <li class="page-item @(_currentPage <= 1 ? "disabled" : "")">
-                                        <button type="button" class="page-link" @onclick="() => GoToPage(_currentPage - 1)" disabled="@(_currentPage <= 1)">
-                                            <i class="ti ti-chevron-left"></i>
-                                        </button>
-                                    </li>
-                                    <li class="page-item disabled"><span class="page-link">Page @_currentPage / @TotalPages</span></li>
-                                    <li class="page-item @(_currentPage >= TotalPages ? "disabled" : "")">
-                                        <button type="button" class="page-link" @onclick="() => GoToPage(_currentPage + 1)" disabled="@(_currentPage >= TotalPages)">
-                                            <i class="ti ti-chevron-right"></i>
-                                        </button>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    }
+                        </tbody>
+                    </table>
                 </div>
+            }
+        </div>
+
+        @* En pied de carte, hors du conteneur défilant : le thème le fige (flex-shrink: 0), donc
+           la pagination reste visible quelle que soit la longueur de la liste — c'est précisément
+           ce qui manquait quand elle était posée sous la liste. *@
+        <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2 text-secondary">
+                <span>Éléments par page</span>
+                <select class="form-select form-select-sm w-auto" value="@_pageSize"
+                        @onchange="@((ChangeEventArgs e) => SetPageSize(int.Parse((string)e.Value!)))">
+                    @foreach (int size in PageSizeOptions)
+                    {
+                        <option value="@size">@size</option>
+                    }
+                </select>
             </div>
+
+            @if (_filtered.Count > 0)
+            {
+                <div class="d-flex align-items-center gap-3">
+                    <span class="text-secondary">
+                        @(((_currentPage - 1) * _pageSize) + 1)–@(Math.Min(_currentPage * _pageSize, _filtered.Count)) sur @_filtered.Count
+                    </span>
+                    <ul class="pagination pagination-sm m-0">
+                        <li class="page-item @(_currentPage <= 1 ? "disabled" : "")">
+                            <button type="button" class="page-link" @onclick="() => GoToPage(_currentPage - 1)" disabled="@(_currentPage <= 1)">
+                                <i class="ti ti-chevron-left"></i>
+                            </button>
+                        </li>
+                        <li class="page-item disabled"><span class="page-link">Page @_currentPage / @TotalPages</span></li>
+                        <li class="page-item @(_currentPage >= TotalPages ? "disabled" : "")">
+                            <button type="button" class="page-link" @onclick="() => GoToPage(_currentPage + 1)" disabled="@(_currentPage >= TotalPages)">
+                                <i class="ti ti-chevron-right"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            }
         </div>
     </div>
 </div>
