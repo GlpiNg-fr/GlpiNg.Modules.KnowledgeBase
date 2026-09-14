@@ -1,0 +1,337 @@
+@page "/tools/knowledgebase/new"
+@page "/tools/knowledgebase/article/{ArticleId:int}"
+@using GlpiNg.Modules.Abstractions.Directory
+@rendermode InteractiveServer
+
+<PageTitle>@(_article?.Subject ?? "Article") — GlpiNg</PageTitle>
+
+@if (_notFound)
+{
+    <div class="text-center text-secondary py-5">
+        <i class="ti ti-book-off fs-1"></i>
+        <p class="mt-2">Cet article est introuvable, ou n'est pas visible avec vos habilitations.</p>
+        <a href="/tools/knowledgebase" class="btn btn-primary"><i class="ti ti-arrow-left me-1"></i>Retour à la base de connaissances</a>
+    </div>
+}
+else if (_article is not null)
+{
+    <div class="glpi-fiche-topbar">
+        <a class="glpi-fiche-pager-btn" href="/tools/knowledgebase" title="Retour à la liste">
+            <i class="ti ti-list"></i>
+        </a>
+        <div class="glpi-fiche-crumb">
+            <i class="ti ti-book"></i>
+            <span>@(IsNew ? "Nouvel article" : $"Article - {_article.Subject}")</span>
+        </div>
+        <div class="glpi-fiche-toolbar">
+            @if (_editMode)
+            {
+                <button type="button" class="btn btn-sm" disabled="@_isSaving" @onclick="CancelEdit">Annuler</button>
+                <button type="button" class="btn btn-sm btn-primary" disabled="@(_isSaving || !CanSave)" @onclick="SaveAsync">
+                    <i class="ti ti-device-floppy me-1 @(_isSaving ? "glpi-spin" : "")"></i>Enregistrer
+                </button>
+            }
+            else
+            {
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="ti ti-dots-vertical me-1"></i>Actions
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><button type="button" class="dropdown-item" @onclick="EnterEditMode"><i class="ti ti-pencil me-1"></i>Modifier</button></li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li>
+                            <button type="button" class="dropdown-item text-danger" @onclick="() => _confirmDelete = true">
+                                <i class="ti ti-trash me-1"></i>Supprimer définitivement
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (_confirmDelete)
+    {
+        <div class="alert alert-danger d-flex align-items-center justify-content-between gap-3" role="alert">
+            <div>
+                <i class="ti ti-alert-triangle me-1"></i>
+                Supprimer cet article, ses révisions et ses cibles ? Cette action est définitive.
+            </div>
+            <div class="btn-list">
+                <button type="button" class="btn btn-sm" @onclick="() => _confirmDelete = false">Annuler</button>
+                <button type="button" class="btn btn-sm btn-danger" @onclick="DeleteAsync">Supprimer</button>
+            </div>
+        </div>
+    }
+
+    <div class="glpi-fiche-layout">
+        <aside class="glpi-fiche-sidebar">
+            @foreach ((string Key, string Icon, string Label, int? Count) tab in Tabs)
+            {
+                <button type="button" class="glpi-fiche-tab-item @(_activeTab == tab.Key ? "active" : "")" @onclick="() => _activeTab = tab.Key">
+                    <i class="ti @tab.Icon"></i>
+                    <span>@tab.Label</span>
+                    @if (tab.Count is { } count)
+                    {
+                        <span class="glpi-fiche-tab-count">@count</span>
+                    }
+                </button>
+            }
+        </aside>
+
+        <div class="glpi-fiche-panel">
+            @switch (_activeTab)
+            {
+                case "article":
+                    @if (_editMode)
+                    {
+                        <div class="glpi-fiche-form">
+                            <div class="mb-3">
+                                <label class="form-label" for="kb-subject">Sujet</label>
+                                <input id="kb-subject" class="form-control" @bind="_article.Subject" @bind:event="oninput" placeholder="Question ou titre de l'article" />
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="kb-category">Catégorie</label>
+                                    <select id="kb-category" class="form-select" value="@(_article.CategoryId?.ToString() ?? string.Empty)"
+                                            @onchange="@((ChangeEventArgs e) => SetCategory((string?)e.Value))">
+                                        <option value="">Sans catégorie</option>
+                                        @foreach ((KnowledgeBaseCategory category, int depth) in _categoryTree)
+                                        {
+                                            @* Espace insécable : un navigateur réduit les espaces ordinaires d'une <option>, l'indentation de l'arbre disparaîtrait. *@
+                                            <option value="@category.Id">@(new string('\u00A0', depth * 4))@category.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <label class="d-flex align-items-center gap-2 mb-2">
+                                        <input class="form-check-input m-0" type="checkbox" @bind="_article.IsFaq" />
+                                        <span>Publier dans la FAQ</span>
+                                    </label>
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <label class="d-flex align-items-center gap-2 mb-2">
+                                        <input class="form-check-input m-0" type="checkbox" @bind="_article.IsPinned" />
+                                        <span>Épingler</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <label class="form-label" for="@ContentEditorId">Contenu</label>
+
+                            <div class="glpi-md-editor">
+                                <div class="glpi-md-editor-bar">
+                                    <div class="btn-group btn-group-sm" role="group" aria-label="Mise en forme">
+                                        @foreach (EditorCommand command in EditorCommands)
+                                        {
+                                            @if (command.IsSeparator)
+                                            {
+                                                <span class="glpi-md-editor-sep"></span>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="btn btn-icon" title="@command.Label" disabled="@_editorPreview"
+                                                        @onclick="() => ApplyCommandAsync(command)">
+                                                    <i class="ti @command.Icon"></i>
+                                                </button>
+                                            }
+                                        }
+                                    </div>
+
+                                    <div class="btn-group btn-group-sm ms-auto" role="group" aria-label="Affichage">
+                                        <button type="button" class="btn @(_editorPreview ? "" : "active")" @onclick="() => _editorPreview = false">
+                                            <i class="ti ti-pencil me-1"></i>Rédaction
+                                        </button>
+                                        <button type="button" class="btn @(_editorPreview ? "active" : "")" @onclick="() => _editorPreview = true">
+                                            <i class="ti ti-eye me-1"></i>Aperçu
+                                        </button>
+                                    </div>
+                                </div>
+
+                                @* Le textarea reste monté en aperçu (caché) : le démonter ferait perdre la
+                                   position du curseur et la pile d'annulation du navigateur à chaque bascule. *@
+                                <textarea id="@ContentEditorId" class="form-control glpi-md-editor-input @(_editorPreview ? "d-none" : "")"
+                                          rows="18" @bind="_article.Content" @bind:event="oninput"
+                                          placeholder="Réponse, procédure, contournement... (Markdown accepté)"></textarea>
+
+                                @if (_editorPreview)
+                                {
+                                    <div class="glpi-md-editor-preview glpi-kb-content">
+                                        @if (string.IsNullOrWhiteSpace(_article.Content))
+                                        {
+                                            <span class="text-secondary">Rien à prévisualiser pour l'instant.</span>
+                                        }
+                                        else
+                                        {
+                                            @((MarkupString)MarkdownRenderer.ToHtml(_article.Content))
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="text-secondary small mt-1">
+                                Markdown : <code>**gras**</code>, <code>*italique*</code>, <code>## titre</code>,
+                                <code>- liste</code>, <code>[lien](url)</code>, <code>`code`</code>, tableaux.
+                                Le HTML écrit dans le contenu n'est pas interprété : il s'affiche tel quel.
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                            <h2 class="mb-0">@_article.Subject</h2>
+                            @if (_article.IsFaq)
+                            {
+                                <span class="badge bg-green-lt">FAQ</span>
+                            }
+                            @if (_article.IsPinned)
+                            {
+                                <span class="badge bg-secondary-lt"><i class="ti ti-pin me-1"></i>Épinglé</span>
+                            }
+                        </div>
+
+                        <div class="text-secondary small mb-3">
+                            <i class="ti ti-folder me-1"></i>@(_article.Category?.Name ?? "Sans catégorie")
+                            <span class="ms-3"><i class="ti ti-user me-1"></i>@(_article.AuthorName ?? "Inconnu")</span>
+                            <span class="ms-3"><i class="ti ti-calendar-plus me-1"></i>Créé le @_article.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                            @if (_article.UpdatedAt is { } updatedAt)
+                            {
+                                <span class="ms-3">
+                                    <i class="ti ti-pencil me-1"></i>Modifié le @updatedAt.ToLocalTime().ToString("dd/MM/yyyy")
+                                    @if (_article.LastEditorName is { Length: > 0 } editor)
+                                    {
+                                        <text> par @editor</text>
+                                    }
+                                </span>
+                            }
+                            <span class="ms-3"><i class="ti ti-eye me-1"></i>@_article.ViewCount consultation@(_article.ViewCount > 1 ? "s" : "")</span>
+                        </div>
+
+                        <div class="glpi-kb-content">@((MarkupString)MarkdownRenderer.ToHtml(_article.Content))</div>
+                    }
+                    break;
+
+                case "targets":
+                    <p class="text-secondary">
+                        Sans aucune cible, l'article est visible de tous ceux qui accèdent à la base de connaissances,
+                        dans les limites du cloisonnement par entité. Dès qu'une cible est ajoutée, seuls les acteurs
+                        visés — et l'auteur — y ont accès.
+                    </p>
+
+                    <div class="row g-2 align-items-end mb-3">
+                        <div class="col-auto">
+                            <label class="form-label" for="kb-target-kind">Type de cible</label>
+                            <select id="kb-target-kind" class="form-select" value="@_newTargetKind"
+                                    @onchange="@((ChangeEventArgs e) => SetTargetKindAsync((string?)e.Value))">
+                                <option value="@nameof(PrincipalKind.Entity)">Entité</option>
+                                <option value="@nameof(PrincipalKind.Group)">Groupe</option>
+                                <option value="@nameof(PrincipalKind.Profile)">Profil</option>
+                                <option value="@nameof(PrincipalKind.User)">Utilisateur</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label" for="kb-target-item">Cible</label>
+                            <select id="kb-target-item" class="form-select" style="min-width: 16rem;" value="@_newTargetItemId"
+                                    @onchange="@((ChangeEventArgs e) => _newTargetItemId = (string?)e.Value ?? string.Empty)">
+                                <option value="">Choisir...</option>
+                                @foreach (PrincipalOption option in _targetOptions)
+                                {
+                                    <option value="@option.Id">@option.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <button type="button" class="btn btn-primary" disabled="@(_newTargetItemId.Length == 0)" @onclick="AddTargetAsync">
+                                <i class="ti ti-plus me-1"></i>Ajouter
+                            </button>
+                        </div>
+                    </div>
+
+                    @if (_article.Targets.Count == 0)
+                    {
+                        <div class="text-secondary">Aucune cible : article visible de tous.</div>
+                    }
+                    else
+                    {
+                        <table class="table table-vcenter">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Cible</th>
+                                    <th class="w-1"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (KnowledgeBaseArticleTarget target in _article.Targets)
+                                {
+                                    <tr>
+                                        <td>@KindLabel(target.Type)</td>
+                                        <td>@TargetName(target)</td>
+                                        <td>
+                                            <button type="button" class="btn btn-icon btn-ghost-danger" title="Retirer cette cible"
+                                                    @onclick="() => RemoveTargetAsync(target)">
+                                                <i class="ti ti-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    break;
+
+                case "revisions":
+                    @if (_revisions.Count == 0)
+                    {
+                        <div class="text-secondary">Aucune révision : l'article n'a pas été modifié depuis sa rédaction.</div>
+                    }
+                    else
+                    {
+                        <table class="table table-vcenter">
+                            <thead>
+                                <tr>
+                                    <th class="w-1">N°</th>
+                                    <th>Archivée le</th>
+                                    <th>Par</th>
+                                    <th>Sujet d'alors</th>
+                                    <th class="w-1"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (KnowledgeBaseArticleRevision revision in _revisions)
+                                {
+                                    <tr>
+                                        <td>@revision.Number</td>
+                                        <td>@revision.RevisedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>@(revision.EditorName ?? "—")</td>
+                                        <td>@revision.Subject</td>
+                                        <td class="text-nowrap">
+                                            <button type="button" class="btn btn-sm" @onclick="() => ToggleRevision(revision.Id)">
+                                                <i class="ti @(_openRevisionId == revision.Id ? "ti-eye-off" : "ti-eye") me-1"></i>
+                                                @(_openRevisionId == revision.Id ? "Masquer" : "Voir")
+                                            </button>
+                                            <button type="button" class="btn btn-sm" @onclick="() => RestoreRevisionAsync(revision)">
+                                                <i class="ti ti-history me-1"></i>Restaurer
+                                            </button>
+                                        </td>
+                                    </tr>
+
+                                    @if (_openRevisionId == revision.Id)
+                                    {
+                                        <tr>
+                                            <td colspan="5">
+                                                <div class="border rounded p-3 glpi-kb-content">@((MarkupString)MarkdownRenderer.ToHtml(revision.Content))</div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    break;
+            }
+        </div>
+    </div>
+}

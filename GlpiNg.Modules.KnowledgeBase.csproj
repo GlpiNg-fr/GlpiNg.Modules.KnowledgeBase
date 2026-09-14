@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>GlpiNg.Modules.KnowledgeBase</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Permet d'utiliser les types ASP.NET Core (composants Razor, AuthenticationStateProvider...)
+      dans cette bibliothèque de classes sans dépendre du projet hôte GlpiNg.Web.
+    -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Uniquement les abstractions EF Core (DbContext, DbSet<T>) : ce module ne connaît ni le
+      fournisseur ni le DbContext concret, qui restent la responsabilité de l'hôte — même montage
+      que GlpiNg.Modules.Inventory.csproj.
+    -->
+    <!--
+      Rendu Markdown des articles (voir Services/MarkdownRenderer.cs). Markdig est la
+      bibliothèque de référence de l'écosystème .NET ; son mode "sans HTML brut" est ce qui permet
+      de rendre du contenu rédigé par un utilisateur sans avoir à assainir du HTML après coup.
+    -->
+    <PackageReference Include="Markdig" Version="1.3.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
+    <!-- ToastService (confirmations/erreurs de formulaire), comme les pages des autres modules. -->
+    <PackageReference Include="Blazor.Bootstrap" Version="4.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Abstractions seules : la base de connaissances ne manipule aucun actif de parc ni aucun
+      objet de déploiement. C'est le module le plus autonome de la solution, et c'est voulu —
+      il n'a besoin que des contrats de contribution (menu, rapports, annuaire des acteurs).
+    -->
+    <ProjectReference Include="..\GlpiNg.Modules.Abstractions\GlpiNg.Modules.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,169 @@
+@page "/tools/knowledgebase"
+@rendermode InteractiveServer
+
+<PageTitle>Base de connaissances — GlpiNg</PageTitle>
+
+<div class="glpi-list-page">
+    <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between glpi-list-toolbar">
+            <div class="btn-list">
+                <div class="input-icon" style="width: 280px;">
+                    <span class="input-icon-addon"><i class="ti ti-search"></i></span>
+                    <input type="text" class="form-control" placeholder="Rechercher un article..." value="@_search"
+                           @oninput="@((ChangeEventArgs e) => OnSearchInput((string?)e.Value))" />
+                </div>
+
+                <select class="form-select w-auto" value="@_sort"
+                        @onchange="@((ChangeEventArgs e) => SetSort((string?)e.Value))">
+                    <option value="recent">Les plus récents</option>
+                    <option value="views">Les plus consultés</option>
+                    <option value="alpha">Ordre alphabétique</option>
+                </select>
+
+                <label class="glpi-switch-inline d-flex align-items-center gap-2 mb-0">
+                    <input class="form-check-input m-0" type="checkbox" checked="@_faqOnly"
+                           @onchange="@((ChangeEventArgs e) => SetFaqOnly((bool)e.Value!))" />
+                    <span>FAQ uniquement</span>
+                </label>
+            </div>
+
+            <div class="btn-list align-items-center">
+                <a href="/tools/knowledgebase/categories" class="btn btn-icon" title="Gérer les catégories">
+                    <i class="ti ti-category"></i>
+                </a>
+                <button type="button" class="btn btn-icon" @onclick="LoadAsync" title="Rafraîchir">
+                    <i class="ti ti-refresh"></i>
+                </button>
+                <a href="/tools/knowledgebase/new" class="btn btn-primary">
+                    <i class="ti ti-plus me-1"></i>Nouvel article
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="list-group">
+                        <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(_selectedCategoryId is null ? "active" : "")"
+                                @onclick="() => SelectCategory(null)">
+                            <span><i class="ti ti-books me-1"></i>Toutes les catégories</span>
+                            <span class="badge bg-secondary-lt">@_visibleArticles.Count</span>
+                        </button>
+
+                        @foreach ((KnowledgeBaseCategory category, int depth) in _categoryTree)
+                        {
+                            <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(_selectedCategoryId == category.Id ? "active" : "")"
+                                    @onclick="() => SelectCategory(category.Id)">
+                                <span style="@($"padding-left: {depth * 1.1:0.##}rem;")">
+                                    <i class="ti ti-folder me-1"></i>@category.Name
+                                </span>
+                                <span class="badge bg-secondary-lt">@CountFor(category.Id)</span>
+                            </button>
+                        }
+
+                        @if (_uncategorizedCount > 0)
+                        {
+                            <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(_selectedCategoryId == UncategorizedId ? "active" : "")"
+                                    @onclick="() => SelectCategory(UncategorizedId)">
+                                <span><i class="ti ti-folder-off me-1"></i>Sans catégorie</span>
+                                <span class="badge bg-secondary-lt">@_uncategorizedCount</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <div class="col-md-9">
+                    @if (_filtered.Count == 0)
+                    {
+                        <div class="text-center text-secondary py-5">
+                            @if (_visibleArticles.Count == 0)
+                            {
+                                <div>La base de connaissances est vide.</div>
+                                <a href="/tools/knowledgebase/new" class="btn btn-primary mt-3">
+                                    <i class="ti ti-plus me-1"></i>Rédiger le premier article
+                                </a>
+                            }
+                            else
+                            {
+                                <div>Aucun article ne correspond à cette recherche.</div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="list-group">
+                            @foreach (KnowledgeBaseArticle article in _paged)
+                            {
+                                <a href="/tools/knowledgebase/article/@article.Id" class="list-group-item list-group-item-action">
+                                    <div class="d-flex align-items-start justify-content-between gap-2">
+                                        <div class="flex-fill">
+                                            <div class="fw-semibold">
+                                                @if (article.IsPinned)
+                                                {
+                                                    <i class="ti ti-pin-filled text-secondary me-1" title="Épinglé"></i>
+                                                }
+                                                @article.Subject
+                                            </div>
+                                            <div class="text-secondary small">@Excerpt(article)</div>
+                                        </div>
+                                        <div class="text-end text-nowrap">
+                                            @if (article.IsFaq)
+                                            {
+                                                <span class="badge bg-green-lt">FAQ</span>
+                                            }
+                                            @if (article.Targets.Count > 0)
+                                            {
+                                                <span class="badge bg-orange-lt" title="Visibilité restreinte">
+                                                    <i class="ti ti-lock"></i>
+                                                </span>
+                                            }
+                                            <div class="text-secondary small mt-1">
+                                                <i class="ti ti-folder me-1"></i>@(article.Category?.Name ?? "Sans catégorie")
+                                            </div>
+                                            <div class="text-secondary small">
+                                                <i class="ti ti-eye me-1"></i>@article.ViewCount
+                                                <span class="ms-2"><i class="ti ti-clock me-1"></i>@LastChange(article)</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            }
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-3">
+                            <div class="d-flex align-items-center gap-2 text-secondary">
+                                <span>Éléments par page</span>
+                                <select class="form-select form-select-sm w-auto" value="@_pageSize"
+                                        @onchange="@((ChangeEventArgs e) => SetPageSize(int.Parse((string)e.Value!)))">
+                                    @foreach (int size in PageSizeOptions)
+                                    {
+                                        <option value="@size">@size</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="text-secondary">
+                                    @(((_currentPage - 1) * _pageSize) + 1)–@(Math.Min(_currentPage * _pageSize, _filtered.Count)) sur @_filtered.Count
+                                </span>
+                                <ul class="pagination pagination-sm m-0">
+                                    <li class="page-item @(_currentPage <= 1 ? "disabled" : "")">
+                                        <button type="button" class="page-link" @onclick="() => GoToPage(_currentPage - 1)" disabled="@(_currentPage <= 1)">
+                                            <i class="ti ti-chevron-left"></i>
+                                        </button>
+                                    </li>
+                                    <li class="page-item disabled"><span class="page-link">Page @_currentPage / @TotalPages</span></li>
+                                    <li class="page-item @(_currentPage >= TotalPages ? "disabled" : "")">
+                                        <button type="button" class="page-link" @onclick="() => GoToPage(_currentPage + 1)" disabled="@(_currentPage >= TotalPages)">
+                                            <i class="ti ti-chevron-right"></i>
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
