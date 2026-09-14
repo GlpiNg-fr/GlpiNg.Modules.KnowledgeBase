@@ -1,5 +1,7 @@
 ﻿using BlazorBootstrap;
 using GlpiNg.Modules.Abstractions.Directory;
+using GlpiNg.Modules.Abstractions.Documents;
+using Microsoft.AspNetCore.Components.Forms;
 using GlpiNg.Modules.KnowledgeBase.Models;
 using GlpiNg.Modules.KnowledgeBase.Services;
 using Microsoft.AspNetCore.Components;
@@ -28,6 +30,13 @@ public partial class Detail : ComponentBase
 
     [Inject]
     private IPrincipalDirectory Directory { get; set; } = null!;
+
+    /// <summary>
+    /// Rattachement de fichiers, rendu par l'hôte : les documents sont une entité globale (voir
+    /// GLPI), que ce module n'a donc pas le droit de manipuler directement.
+    /// </summary>
+    [Inject]
+    private IDocumentAttachments Documents { get; set; } = null!;
 
     [Inject]
     private NavigationManager Nav { get; set; } = null!;
@@ -62,6 +71,21 @@ public partial class Detail : ComponentBase
     private bool _newTargetRecursive;
 
     private List<KnowledgeBaseArticleHistoryEntry> _historyEntries = [];
+
+    private IReadOnlyList<DocumentSummary> _documents = [];
+
+    /// <summary>Documents déjà présents proposés au rattachement — voir IDocumentAttachments.SearchAsync.</summary>
+    private IReadOnlyList<DocumentSummary> _documentCandidates = [];
+    private string _documentSearch = string.Empty;
+    private bool _isUploading;
+    private string? _uploadError;
+
+    /// <summary>
+    /// Plafond du téléversement depuis la fiche. InputFile impose de donner une borne explicite ;
+    /// 64 Mo laisse passer un mode d'emploi ou une capture sans ouvrir la porte à un fichier que
+    /// le circuit SignalR mettrait plusieurs minutes à transporter.
+    /// </summary>
+    private const long MaxUploadBytes = 64L * 1024 * 1024;
 
     private string _activeTab = "article";
     private bool _editMode;
@@ -181,6 +205,7 @@ public partial class Detail : ComponentBase
             {
                 yield return ("targets", "ti-lock", "Cibles", _article?.Targets.Count is > 0 ? _article.Targets.Count : null);
                 yield return ("revisions", "ti-file-text", "Révisions", _revisions.Count > 0 ? _revisions.Count : null);
+                yield return ("documents", "ti-paperclip", "Documents", _documents.Count > 0 ? _documents.Count : null);
                 yield return ("history", "ti-history", "Historique", _historyEntries.Count > 0 ? _historyEntries.Count : null);
             }
         }
@@ -212,6 +237,7 @@ public partial class Detail : ComponentBase
             };
             _revisions = [];
             _historyEntries = [];
+            _documents = [];
             return;
         }
 
@@ -252,6 +278,7 @@ public partial class Detail : ComponentBase
             .ToListAsync();
 
         _historyEntries = await Service.GetHistoryAsync(articleId);
+        await LoadDocumentsAsync();
 
         await LoadTargetNamesAsync();
         await LoadTargetOptionsAsync();
@@ -482,6 +509,113 @@ public partial class Detail : ComponentBase
             ToastService.Notify(new ToastMessage(ToastType.Danger, $"Échec de l'enregistrement des cibles : {ex.Message}"));
         }
     }
+
+    // ---- Documents -----------------------------------------------------------------------------
+
+    /// <summary>Type d'objet sous lequel un article est rattaché, aligné sur GLPI (« KnowbaseItem »).</summary>
+    private const string DocumentItemType = "KnowbaseItem";
+
+    private async Task LoadDocumentsAsync()
+    {
+        if (_article is null || IsNew)
+        {
+            _documents = [];
+            return;
+        }
+
+        _documents = await Documents.GetForItemAsync(DocumentItemType, _article.Id);
+    }
+
+    private string DocumentUrl(DocumentSummary document) => Documents.DownloadUrl(document.Id);
+
+    /// <summary>
+    /// Téléverse le fichier choisi et le rattache. Le flux d'InputFile est passé tel quel au
+    /// service, qui le hache et l'écrit au fil de l'eau : charger le fichier en mémoire d'abord
+    /// tiendrait le circuit Blazor entier pour un fichier de plusieurs dizaines de mégaoctets.
+    /// </summary>
+    private async Task UploadDocumentAsync(InputFileChangeEventArgs args)
+    {
+        if (_article is null || IsNew)
+        {
+            return;
+        }
+
+        _isUploading = true;
+        _uploadError = null;
+
+        try
+        {
+            IBrowserFile file = args.File;
+
+            await using Stream content = file.OpenReadStream(MaxUploadBytes);
+
+            await Documents.UploadAndAttachAsync(
+                DocumentItemType,
+                _article.Id,
+                file.Name,
+                content,
+                file.ContentType,
+                await CurrentUserNameAsync(),
+                await CurrentUserIdAsync());
+
+            await LoadDocumentsAsync();
+            ToastService.Notify(new ToastMessage(ToastType.Success, $"« {file.Name} » ajouté."));
+        }
+        catch (IOException ex)
+        {
+            // Dépassement du plafond d'InputFile : le message brut parle de flux, pas de taille.
+            _uploadError = $"Fichier refusé (taille maximale {MaxUploadBytes / (1024 * 1024)} Mo) : {ex.Message}";
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or UnauthorizedAccessException)
+        {
+            _uploadError = $"Échec du téléversement : {ex.Message}";
+        }
+        finally
+        {
+            _isUploading = false;
+        }
+    }
+
+    private async Task SearchDocumentsAsync()
+        => _documentCandidates = await Documents.SearchAsync(_documentSearch);
+
+    private async Task AttachDocumentAsync(DocumentSummary document)
+    {
+        if (_article is null || IsNew)
+        {
+            return;
+        }
+
+        await Documents.AttachAsync(DocumentItemType, _article.Id, document.Id);
+        await LoadDocumentsAsync();
+
+        _documentCandidates = [];
+        _documentSearch = string.Empty;
+    }
+
+    /// <summary>
+    /// Détache sans supprimer : le document peut servir ailleurs, et le retirer d'un article ne
+    /// dit rien de son sort dans le reste de l'installation (voir l'écran Gestion &gt; Documents).
+    /// </summary>
+    private async Task DetachDocumentAsync(DocumentSummary document)
+    {
+        if (_article is null)
+        {
+            return;
+        }
+
+        await Documents.DetachAsync(DocumentItemType, _article.Id, document.Id);
+        await LoadDocumentsAsync();
+    }
+
+    /// <summary>Taille lisible : les octets bruts ne disent rien à personne dans un tableau.</summary>
+    private static string FormatSize(long bytes) => bytes switch
+    {
+        < 1024 => $"{bytes} o",
+        < 1024 * 1024 => $"{bytes / 1024.0:0.#} Ko",
+        < 1024 * 1024 * 1024 => $"{bytes / (1024.0 * 1024):0.#} Mo",
+        _ => $"{bytes / (1024.0 * 1024 * 1024):0.##} Go",
+    };
 
     private void ToggleRevision(int revisionId)
         => _openRevisionId = _openRevisionId == revisionId ? null : revisionId;

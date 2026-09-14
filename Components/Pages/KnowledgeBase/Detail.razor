@@ -1,6 +1,7 @@
 ﻿@page "/tools/knowledgebase/new"
 @page "/tools/knowledgebase/article/{ArticleId:int}"
 @using GlpiNg.Modules.Abstractions.Directory
+@using GlpiNg.Modules.Abstractions.Documents
 @rendermode InteractiveServer
 
 <PageTitle>@(_article?.Subject ?? "Article") — GlpiNg</PageTitle>
@@ -393,6 +394,110 @@ else if (_article is not null)
                                 }
                             </tbody>
                         </table>
+                    }
+                    break;
+
+                case "documents":
+                    <p class="text-secondary">
+                        Fichiers rattachés à l'article. Un document est une fiche globale, partageable entre
+                        plusieurs objets : le détacher d'ici ne le supprime pas de l'installation.
+                    </p>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-5">
+                            <label class="form-label" for="kb-doc-upload">Téléverser un fichier</label>
+                            <InputFile id="kb-doc-upload" class="form-control" OnChange="UploadDocumentAsync" disabled="@_isUploading" />
+                        </div>
+                        <div class="col-md-7">
+                            <label class="form-label" for="kb-doc-search">Ou rattacher un document existant</label>
+                            <div class="input-group">
+                                <input id="kb-doc-search" class="form-control" @bind="_documentSearch" @bind:event="oninput"
+                                       placeholder="Nom ou nom de fichier" />
+                                <button type="button" class="btn" @onclick="SearchDocumentsAsync">
+                                    <i class="ti ti-search me-1"></i>Chercher
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (_isUploading)
+                    {
+                        <div class="text-secondary mb-3"><i class="ti ti-loader me-1"></i>Téléversement en cours…</div>
+                    }
+
+                    @if (_uploadError is { Length: > 0 } uploadError)
+                    {
+                        <div class="alert alert-danger">@uploadError</div>
+                    }
+
+                    @if (_documentCandidates.Count > 0)
+                    {
+                        <div class="border rounded mb-3">
+                            <div class="list-group list-group-flush">
+                                @foreach (DocumentSummary candidate in _documentCandidates)
+                                {
+                                    <div class="list-group-item d-flex align-items-center gap-2">
+                                        <i class="ti ti-file"></i>
+                                        <span class="flex-fill">@candidate.Name <span class="text-secondary small">(@candidate.FileName)</span></span>
+                                        <button type="button" class="btn btn-sm" @onclick="() => AttachDocumentAsync(candidate)">
+                                            <i class="ti ti-link me-1"></i>Rattacher
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @if (_documents.Count == 0)
+                    {
+                        <div class="text-secondary">Aucun document rattaché.</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-vcenter">
+                                <thead>
+                                    <tr>
+                                        <th>Nom</th>
+                                        <th>Fichier</th>
+                                        <th>Taille</th>
+                                        <th>Ajouté le</th>
+                                        <th class="w-1"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (DocumentSummary document in _documents)
+                                    {
+                                        <tr>
+                                            <td>@document.Name</td>
+                                            <td class="text-secondary">@document.FileName</td>
+                                            <td class="text-secondary text-nowrap">@FormatSize(document.SizeBytes)</td>
+                                            <td class="text-secondary text-nowrap">@document.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                            <td class="text-nowrap">
+                                                @if (document.IsContentMissing)
+                                                {
+                                                    @* Fiche importée sans son fichier : le proposer au téléchargement
+                                                       ne donnerait qu'une erreur. *@
+                                                    <span class="badge bg-orange-lt" title="Fichier absent : importé sans accès au dossier files/ de GLPI">
+                                                        <i class="ti ti-file-off me-1"></i>Sans fichier
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <a class="btn btn-sm" href="@DocumentUrl(document)" target="_blank" rel="noopener">
+                                                        <i class="ti ti-download me-1"></i>Télécharger
+                                                    </a>
+                                                }
+                                                <button type="button" class="btn btn-icon btn-ghost-danger" title="Détacher de cet article"
+                                                        @onclick="() => DetachDocumentAsync(document)">
+                                                    <i class="ti ti-unlink"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
                     }
                     break;
 
