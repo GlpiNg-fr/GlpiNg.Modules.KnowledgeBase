@@ -1,4 +1,4 @@
-@page "/tools/knowledgebase"
+﻿@page "/tools/knowledgebase"
 @rendermode InteractiveServer
 
 <PageTitle>Base de connaissances — GlpiNg</PageTitle>
@@ -115,6 +115,14 @@
                                             {
                                                 <span class="badge bg-orange-lt" title="Visibilité restreinte">
                                                     <i class="ti ti-lock"></i>
+                                                </span>
+                                            }
+                                            @* Hors période, un article n'apparaît qu'à son auteur : le signaler
+                                               lui évite de croire publié ce que personne d'autre ne voit. *@
+                                            @if (!KnowledgeBaseService.IsPublished(article, DateTime.UtcNow))
+                                            {
+                                                <span class="badge bg-orange-lt" title="Hors période de visibilité : seul vous le voyez">
+                                                    <i class="ti ti-clock-off"></i>
                                                 </span>
                                             }
                                             <div class="text-secondary small mt-1">

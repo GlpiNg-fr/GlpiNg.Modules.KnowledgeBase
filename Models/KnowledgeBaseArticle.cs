@@ -47,6 +47,25 @@ public class KnowledgeBaseArticle : IEntityScoped
     public bool IsPinned { get; set; }
 
     /// <summary>
+    /// Début de la période de visibilité (<c>glpi_knowbaseitems.begin_date</c>) : avant cette
+    /// date, l'article n'est lisible que de son auteur. <c>null</c> = visible dès sa création.
+    ///
+    /// Sert à préparer un article à l'avance — une procédure qui n'entre en vigueur qu'au
+    /// changement de parc, par exemple — sans qu'il soit lu entre-temps comme s'il s'appliquait
+    /// déjà.
+    /// </summary>
+    public DateTime? VisibleFrom { get; set; }
+
+    /// <summary>
+    /// Fin de la période de visibilité (<c>glpi_knowbaseitems.end_date</c>) : passé cette date,
+    /// l'article disparaît de la base sans être supprimé. <c>null</c> = pas d'échéance.
+    ///
+    /// C'est ce qui distingue une consigne temporaire d'un article de fond : elle cesse d'être
+    /// lue le jour où elle cesse d'être vraie, plutôt que de rester à traîner indéfiniment.
+    /// </summary>
+    public DateTime? VisibleUntil { get; set; }
+
+    /// <summary>
     /// Nombre de consultations. Incrémenté à chaque ouverture de la fiche par un autre compte que
     /// l'auteur du dernier incrément immédiat — voir KnowledgeBaseService.RegisterViewAsync, qui
     /// explique pourquoi un simple ++ à chaque rendu ne convenait pas.
@@ -78,6 +97,8 @@ public class KnowledgeBaseArticle : IEntityScoped
     public List<KnowledgeBaseArticleRevision> Revisions { get; set; } = [];
 
     public List<KnowledgeBaseArticleTarget> Targets { get; set; } = [];
+
+    public List<KnowledgeBaseArticleHistoryEntry> History { get; set; } = [];
 }
 
 /// <summary>
@@ -124,4 +145,63 @@ public class KnowledgeBaseArticleTarget
 
     public PrincipalKind Type { get; set; }
     public int ItemId { get; set; }
+
+    /// <summary>
+    /// Entité à laquelle la cible est restreinte, pour une cible <b>groupe</b> ou <b>profil</b>
+    /// (<c>entities_id</c> de <c>glpi_knowbaseitems_groups</c> / <c>_profiles</c>) : « le profil
+    /// Technicien, mais seulement celui de l'agence de Lille ». <c>null</c> = toute
+    /// l'installation, qui est le défaut.
+    ///
+    /// Sans portée, un profil désigne les mêmes quelques rôles partout, et cibler « Technicien »
+    /// reviendrait à ouvrir l'article à tous les techniciens de toutes les entités — rarement ce
+    /// qu'on veut dans une installation multi-entités.
+    ///
+    /// Ignoré pour une cible entité (l'entité <i>est</i> <see cref="ItemId"/>) et pour une cible
+    /// utilisateur (désigner quelqu'un nommément ne se restreint pas davantage).
+    /// </summary>
+    public int? ScopeEntityId { get; set; }
+
+    /// <summary>
+    /// La cible s'étend aux sous-entités : de <see cref="ItemId"/> pour une cible entité, de
+    /// <see cref="ScopeEntityId"/> pour une cible groupe ou profil. Sans objet pour une cible
+    /// utilisateur.
+    /// </summary>
+    public bool IsRecursive { get; set; }
+}
+
+/// <summary>
+/// Une cible telle que l'écran la saisit, avant qu'elle ne devienne une ligne en base. Type à part
+/// plutôt que <see cref="KnowledgeBaseArticleTarget"/> directement : le service remplace la liste
+/// entière à chaque enregistrement, et manipuler des entités suivies par EF pour les recréer aussitôt
+/// invite à réutiliser par erreur des <c>Id</c> qui ne veulent plus rien dire.
+/// </summary>
+public readonly record struct KnowledgeBaseTargetSpec(PrincipalKind Kind, int ItemId, int? ScopeEntityId, bool IsRecursive);
+
+/// <summary>
+/// Une ligne de l'onglet « Historique » d'un article : qui a changé quoi, quand. Reprend la forme
+/// de <c>ComputerHistoryEntry</c> et de <c>GlpiGroupHistoryEntry</c> côté hôte — même colonnes,
+/// même écran, pour que l'historique d'un article se lise comme celui de n'importe quelle fiche.
+///
+/// Complète les <see cref="KnowledgeBaseArticleRevision"/> sans faire double emploi : une révision
+/// archive <i>le texte</i> pour pouvoir le restaurer, l'historique trace <i>tous</i> les
+/// changements — catégorie, drapeau FAQ, épinglage, dates de visibilité, cibles — dont aucun ne
+/// laissait jusqu'ici la moindre trace. Une base de connaissances se tient à plusieurs, et
+/// « depuis quand cet article est-il réservé à ce profil ? » n'avait pas de réponse.
+/// </summary>
+public class KnowledgeBaseArticleHistoryEntry
+{
+    public int Id { get; set; }
+    public int ArticleId { get; set; }
+    public KnowledgeBaseArticle? Article { get; set; }
+
+    public DateTime OccurredAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>Compte à l'origine du changement, conservé par son nom — voir <see cref="KnowledgeBaseArticle.AuthorName"/>.</summary>
+    public required string User { get; set; }
+
+    /// <summary>Libellé humain du champ touché (« Catégorie », « Cibles »...).</summary>
+    public required string Field { get; set; }
+
+    /// <summary>Ce qui a changé, rédigé pour être lu tel quel (« « Réseau » → « Réseau &gt; VPN » »).</summary>
+    public required string Description { get; set; }
 }

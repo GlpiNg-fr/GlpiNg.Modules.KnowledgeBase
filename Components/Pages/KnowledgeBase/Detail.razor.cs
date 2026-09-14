@@ -1,4 +1,4 @@
-using BlazorBootstrap;
+﻿using BlazorBootstrap;
 using GlpiNg.Modules.Abstractions.Directory;
 using GlpiNg.Modules.KnowledgeBase.Models;
 using GlpiNg.Modules.KnowledgeBase.Services;
@@ -55,6 +55,13 @@ public partial class Detail : ComponentBase
     private List<PrincipalOption> _targetOptions = [];
     private string _newTargetKind = nameof(PrincipalKind.Entity);
     private string _newTargetItemId = string.Empty;
+
+    /// <summary>Entités proposées comme portée d'une cible groupe ou profil — voir KnowledgeBaseArticleTarget.ScopeEntityId.</summary>
+    private List<PrincipalOption> _entityOptions = [];
+    private string _newTargetScopeEntityId = string.Empty;
+    private bool _newTargetRecursive;
+
+    private List<KnowledgeBaseArticleHistoryEntry> _historyEntries = [];
 
     private string _activeTab = "article";
     private bool _editMode;
@@ -173,7 +180,8 @@ public partial class Detail : ComponentBase
             if (!IsNew)
             {
                 yield return ("targets", "ti-lock", "Cibles", _article?.Targets.Count is > 0 ? _article.Targets.Count : null);
-                yield return ("revisions", "ti-history", "Révisions", _revisions.Count > 0 ? _revisions.Count : null);
+                yield return ("revisions", "ti-file-text", "Révisions", _revisions.Count > 0 ? _revisions.Count : null);
+                yield return ("history", "ti-history", "Historique", _historyEntries.Count > 0 ? _historyEntries.Count : null);
             }
         }
     }
@@ -203,6 +211,7 @@ public partial class Detail : ComponentBase
                 AuthorUserId = await CurrentUserIdAsync(),
             };
             _revisions = [];
+            _historyEntries = [];
             return;
         }
 
@@ -242,8 +251,11 @@ public partial class Detail : ComponentBase
             .OrderByDescending(revision => revision.Number)
             .ToListAsync();
 
+        _historyEntries = await Service.GetHistoryAsync(articleId);
+
         await LoadTargetNamesAsync();
         await LoadTargetOptionsAsync();
+        _entityOptions = [.. await Directory.GetAsync(PrincipalKind.Entity)];
 
         if (await CurrentUserIdAsync() is int readerId)
         {
@@ -291,8 +303,24 @@ public partial class Detail : ComponentBase
     {
         _newTargetKind = kind ?? nameof(PrincipalKind.Entity);
         _newTargetItemId = string.Empty;
+        _newTargetScopeEntityId = string.Empty;
+        _newTargetRecursive = false;
         await LoadTargetOptionsAsync();
     }
+
+    /// <summary>
+    /// La portée par entité ne s'applique qu'aux cibles groupe et profil : pour une cible entité
+    /// l'entité est la cible elle-même, et une cible utilisateur désigne déjà une personne.
+    /// </summary>
+    private bool ScopeApplies => Enum.Parse<PrincipalKind>(_newTargetKind) is PrincipalKind.Group or PrincipalKind.Profile;
+
+    /// <summary>La récursivité n'a de sens que s'il y a une entité sur laquelle descendre.</summary>
+    private bool RecursionApplies => Enum.Parse<PrincipalKind>(_newTargetKind) switch
+    {
+        PrincipalKind.Entity => true,
+        PrincipalKind.Group or PrincipalKind.Profile => _newTargetScopeEntityId.Length > 0,
+        _ => false,
+    };
 
     private void SetCategory(string? value)
     {
@@ -400,16 +428,29 @@ public partial class Detail : ComponentBase
 
         PrincipalKind kind = Enum.Parse<PrincipalKind>(_newTargetKind);
 
-        if (_article.Targets.Any(target => target.Type == kind && target.ItemId == itemId))
+        int? scopeEntityId = ScopeApplies && int.TryParse(_newTargetScopeEntityId, out int entityId) ? entityId : null;
+        bool recursive = RecursionApplies && _newTargetRecursive;
+
+        KnowledgeBaseTargetSpec added = new(kind, itemId, scopeEntityId, recursive);
+
+        if (CurrentTargets().Contains(added))
         {
             return;
         }
 
-        List<(PrincipalKind, int)> targets = [.. _article.Targets.Select(target => (target.Type, target.ItemId)), (kind, itemId)];
+        await ApplyTargetsAsync([.. CurrentTargets(), added]);
 
-        await ApplyTargetsAsync(targets);
         _newTargetItemId = string.Empty;
+        _newTargetScopeEntityId = string.Empty;
+        _newTargetRecursive = false;
     }
+
+    /// <summary>Les cibles enregistrées, sous la forme que le service attend.</summary>
+    private List<KnowledgeBaseTargetSpec> CurrentTargets()
+        => _article is null
+            ? []
+            : [.. _article.Targets.Select(target =>
+                new KnowledgeBaseTargetSpec(target.Type, target.ItemId, target.ScopeEntityId, target.IsRecursive))];
 
     private async Task RemoveTargetAsync(KnowledgeBaseArticleTarget removed)
     {
@@ -418,14 +459,12 @@ public partial class Detail : ComponentBase
             return;
         }
 
-        List<(PrincipalKind, int)> targets = [.. _article.Targets
+        await ApplyTargetsAsync([.. _article.Targets
             .Where(target => target.Id != removed.Id)
-            .Select(target => (target.Type, target.ItemId))];
-
-        await ApplyTargetsAsync(targets);
+            .Select(target => new KnowledgeBaseTargetSpec(target.Type, target.ItemId, target.ScopeEntityId, target.IsRecursive))]);
     }
 
-    private async Task ApplyTargetsAsync(IReadOnlyList<(PrincipalKind Kind, int ItemId)> targets)
+    private async Task ApplyTargetsAsync(IReadOnlyList<KnowledgeBaseTargetSpec> targets)
     {
         if (_article is null)
         {
@@ -434,7 +473,7 @@ public partial class Detail : ComponentBase
 
         try
         {
-            await Service.SetTargetsAsync(_article.Id, targets);
+            await Service.SetTargetsAsync(_article.Id, targets, await CurrentUserNameAsync());
             await LoadArticleAsync(_article.Id);
             _activeTab = "targets";
         }
@@ -483,14 +522,42 @@ public partial class Detail : ComponentBase
             // donc à retirer en connaissance de cause.
             : $"#{target.ItemId} (introuvable)";
 
-    private static string KindLabel(PrincipalKind kind) => kind switch
+    private static string KindLabel(PrincipalKind kind) => KnowledgeBaseService.KindLabel(kind);
+
+    /// <summary>
+    /// Portée d'une cible, telle qu'affichée dans la colonne « Portée » : l'entité de restriction
+    /// et la mention des sous-entités, ou un tiret quand la cible vaut partout.
+    /// </summary>
+    private string TargetScopeLabel(KnowledgeBaseArticleTarget target)
     {
-        PrincipalKind.Entity => "Entité",
-        PrincipalKind.Group => "Groupe",
-        PrincipalKind.Profile => "Profil",
-        PrincipalKind.User => "Utilisateur",
-        _ => kind.ToString(),
-    };
+        if (target.Type is PrincipalKind.User)
+        {
+            return "—";
+        }
+
+        if (target.Type is PrincipalKind.Entity)
+        {
+            return target.IsRecursive ? "Et sous-entités" : "Cette entité seule";
+        }
+
+        if (target.ScopeEntityId is not int entityId)
+        {
+            return "Toute l'installation";
+        }
+
+        string entity = _entityOptions.FirstOrDefault(option => option.Id == entityId)?.Name ?? $"#{entityId}";
+
+        return target.IsRecursive ? $"{entity} (et sous-entités)" : entity;
+    }
+
+    /// <summary>
+    /// Liaison des dates de visibilité : l'input <c>type="date"</c> rend une chaîne vide quand
+    /// l'utilisateur efface le champ, ce qui doit valoir « pas de borne » et non une date nulle.
+    /// </summary>
+    private static string DateValue(DateTime? date) => date?.ToString("yyyy-MM-dd") ?? string.Empty;
+
+    private static DateTime? ParseDate(string? value)
+        => DateTime.TryParse(value, out DateTime parsed) ? parsed.Date : null;
 
     private async Task<int?> CurrentUserIdAsync()
     {
@@ -529,6 +596,8 @@ public partial class Detail : ComponentBase
         AuthorUserId = article.AuthorUserId,
         AuthorName = article.AuthorName,
         LastEditorName = article.LastEditorName,
+        VisibleFrom = article.VisibleFrom,
+        VisibleUntil = article.VisibleUntil,
         CreatedAt = article.CreatedAt,
         UpdatedAt = article.UpdatedAt,
         EntityId = article.EntityId,
