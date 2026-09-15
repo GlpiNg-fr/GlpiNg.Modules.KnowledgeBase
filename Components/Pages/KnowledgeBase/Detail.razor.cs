@@ -513,7 +513,7 @@ public partial class Detail : ComponentBase
     // ---- Documents -----------------------------------------------------------------------------
 
     /// <summary>Type d'objet sous lequel un article est rattaché, aligné sur GLPI (« KnowbaseItem »).</summary>
-    private const string DocumentItemType = "KnowbaseItem";
+    private const string DocumentItemType = DocumentItemTypes.KnowledgeBaseArticle;
 
     private async Task LoadDocumentsAsync()
     {
