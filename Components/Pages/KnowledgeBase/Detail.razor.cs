@@ -1,6 +1,8 @@
 ﻿using BlazorBootstrap;
 using GlpiNg.Modules.Abstractions.Directory;
 using GlpiNg.Modules.Abstractions.Documents;
+using GlpiNg.Modules.Abstractions.Items;
+using GlpiNg.Modules.Abstractions.Notes;
 using Microsoft.AspNetCore.Components.Forms;
 using GlpiNg.Modules.KnowledgeBase.Models;
 using GlpiNg.Modules.KnowledgeBase.Services;
@@ -38,6 +40,10 @@ public partial class Detail : ComponentBase
     [Inject]
     private IDocumentAttachments Documents { get; set; } = null!;
 
+    /// <summary>Notes libres, rendues par l'hôte : même montage que les documents.</summary>
+    [Inject]
+    private IItemNotes Notes { get; set; } = null!;
+
     [Inject]
     private NavigationManager Nav { get; set; } = null!;
 
@@ -73,6 +79,12 @@ public partial class Detail : ComponentBase
     private List<KnowledgeBaseArticleHistoryEntry> _historyEntries = [];
 
     private IReadOnlyList<DocumentSummary> _documents = [];
+
+    private IReadOnlyList<ItemNote> _notes = [];
+    private string _newNote = string.Empty;
+    private int? _editingNoteId;
+    private string _editingNote = string.Empty;
+    private int? _confirmDeleteNoteId;
 
     /// <summary>Documents déjà présents proposés au rattachement — voir IDocumentAttachments.SearchAsync.</summary>
     private IReadOnlyList<DocumentSummary> _documentCandidates = [];
@@ -206,6 +218,7 @@ public partial class Detail : ComponentBase
                 yield return ("targets", "ti-lock", "Cibles", _article?.Targets.Count is > 0 ? _article.Targets.Count : null);
                 yield return ("revisions", "ti-file-text", "Révisions", _revisions.Count > 0 ? _revisions.Count : null);
                 yield return ("documents", "ti-paperclip", "Documents", _documents.Count > 0 ? _documents.Count : null);
+                yield return ("notes", "ti-notes", "Notes", _notes.Count > 0 ? _notes.Count : null);
                 yield return ("history", "ti-history", "Historique", _historyEntries.Count > 0 ? _historyEntries.Count : null);
             }
         }
@@ -238,6 +251,7 @@ public partial class Detail : ComponentBase
             _revisions = [];
             _historyEntries = [];
             _documents = [];
+            _notes = [];
             return;
         }
 
@@ -279,6 +293,7 @@ public partial class Detail : ComponentBase
 
         _historyEntries = await Service.GetHistoryAsync(articleId);
         await LoadDocumentsAsync();
+        await LoadNotesAsync();
 
         await LoadTargetNamesAsync();
         await LoadTargetOptionsAsync();
@@ -510,10 +525,71 @@ public partial class Detail : ComponentBase
         }
     }
 
+    // ---- Notes ---------------------------------------------------------------------------------
+
+    private async Task LoadNotesAsync()
+    {
+        if (_article is null || IsNew)
+        {
+            _notes = [];
+            return;
+        }
+
+        _notes = await Notes.GetForItemAsync(ArticleItemType, _article.Id);
+    }
+
+    private async Task AddNoteAsync()
+    {
+        if (_article is null || IsNew || string.IsNullOrWhiteSpace(_newNote))
+        {
+            return;
+        }
+
+        await Notes.AddAsync(
+            ArticleItemType, _article.Id, _newNote, await CurrentUserNameAsync(), await CurrentUserIdAsync());
+
+        _newNote = string.Empty;
+        await LoadNotesAsync();
+    }
+
+    private void StartEditNote(ItemNote note)
+    {
+        _editingNoteId = note.Id;
+        _editingNote = note.Content;
+        _confirmDeleteNoteId = null;
+    }
+
+    private void CancelEditNote()
+    {
+        _editingNoteId = null;
+        _editingNote = string.Empty;
+    }
+
+    private async Task SaveNoteAsync()
+    {
+        if (_editingNoteId is not int noteId || string.IsNullOrWhiteSpace(_editingNote))
+        {
+            return;
+        }
+
+        await Notes.UpdateAsync(noteId, _editingNote, await CurrentUserNameAsync());
+
+        CancelEditNote();
+        await LoadNotesAsync();
+    }
+
+    private async Task DeleteNoteAsync(int noteId)
+    {
+        await Notes.DeleteAsync(noteId);
+
+        _confirmDeleteNoteId = null;
+        await LoadNotesAsync();
+    }
+
     // ---- Documents -----------------------------------------------------------------------------
 
-    /// <summary>Type d'objet sous lequel un article est rattaché, aligné sur GLPI (« KnowbaseItem »).</summary>
-    private const string DocumentItemType = DocumentItemTypes.KnowledgeBaseArticle;
+    /// <summary>Type d'objet sous lequel un article est rattaché — voir <see cref="ItemTypes"/>.</summary>
+    private const string ArticleItemType = ItemTypes.KnowledgeBaseArticle;
 
     private async Task LoadDocumentsAsync()
     {
@@ -523,7 +599,7 @@ public partial class Detail : ComponentBase
             return;
         }
 
-        _documents = await Documents.GetForItemAsync(DocumentItemType, _article.Id);
+        _documents = await Documents.GetForItemAsync(ArticleItemType, _article.Id);
     }
 
     private string DocumentUrl(DocumentSummary document) => Documents.DownloadUrl(document.Id);
@@ -550,7 +626,7 @@ public partial class Detail : ComponentBase
             await using Stream content = file.OpenReadStream(MaxUploadBytes);
 
             await Documents.UploadAndAttachAsync(
-                DocumentItemType,
+                ArticleItemType,
                 _article.Id,
                 file.Name,
                 content,
@@ -586,7 +662,7 @@ public partial class Detail : ComponentBase
             return;
         }
 
-        await Documents.AttachAsync(DocumentItemType, _article.Id, document.Id);
+        await Documents.AttachAsync(ArticleItemType, _article.Id, document.Id);
         await LoadDocumentsAsync();
 
         _documentCandidates = [];
@@ -604,7 +680,7 @@ public partial class Detail : ComponentBase
             return;
         }
 
-        await Documents.DetachAsync(DocumentItemType, _article.Id, document.Id);
+        await Documents.DetachAsync(ArticleItemType, _article.Id, document.Id);
         await LoadDocumentsAsync();
     }
 
