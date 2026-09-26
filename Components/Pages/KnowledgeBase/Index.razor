@@ -3,9 +3,9 @@
 
 <PageTitle>Base de connaissances — GlpiNg</PageTitle>
 
-<div class="glpi-list-page">
+<div class="glping-list-page">
     <div class="card">
-        <div class="card-header d-flex align-items-center justify-content-between glpi-list-toolbar">
+        <div class="card-header d-flex align-items-center justify-content-between glping-list-toolbar">
             <div class="btn-list">
                 <div class="input-icon" style="width: 280px;">
                     <span class="input-icon-addon"><i class="ti ti-search"></i></span>
@@ -20,7 +20,7 @@
                     <option value="alpha">Ordre alphabétique</option>
                 </select>
 
-                <label class="glpi-switch-inline d-flex align-items-center gap-2 mb-0">
+                <label class="glping-switch-inline d-flex align-items-center gap-2 mb-0">
                     <input class="form-check-input m-0" type="checkbox" checked="@_faqOnly"
                            @onchange="@((ChangeEventArgs e) => SetFaqOnly((bool)e.Value!))" />
                     <span>FAQ uniquement</span>
@@ -40,8 +40,8 @@
             </div>
         </div>
 
-        <div class="glpi-kb-layout">
-            <div class="glpi-kb-categories">
+        <div class="glping-kb-layout">
+            <div class="glping-kb-categories">
                 <div class="list-group">
                     <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(_selectedCategoryId is null ? "active" : "")"
                             @onclick="() => SelectCategory(null)">

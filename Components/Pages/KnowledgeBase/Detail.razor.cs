@@ -107,7 +107,7 @@ public partial class Detail : ComponentBase
     private int? _openRevisionId;
     private int? _loadedId;
 
-    /// <summary>Id DOM du textarea : c'est par lui que la barre d'outils travaille (voir glpi-ng.js).</summary>
+    /// <summary>Id DOM du textarea : c'est par lui que la barre d'outils travaille (voir glping.js).</summary>
     private const string ContentEditorId = "kb-content";
 
     private bool _editorPreview;
@@ -153,7 +153,7 @@ public partial class Detail : ComponentBase
         new("Trait de séparation", "ti-minus", "\n---\n"),
     ];
 
-    /// <summary>Ce que renvoie <c>glpiNg.editorCommand</c> : le texte réécrit et la sélection à rétablir.</summary>
+    /// <summary>Ce que renvoie <c>glping.editorCommand</c> : le texte réécrit et la sélection à rétablir.</summary>
     private sealed record EditorResult(string Value, int Start, int End);
 
     /// <summary>
@@ -168,7 +168,7 @@ public partial class Detail : ComponentBase
             return;
         }
 
-        EditorResult? result = await JS.InvokeAsync<EditorResult?>("glpiNg.editorCommand", ContentEditorId, new
+        EditorResult? result = await JS.InvokeAsync<EditorResult?>("glping.editorCommand", ContentEditorId, new
         {
             before = command.Before,
             after = command.After,
@@ -195,7 +195,7 @@ public partial class Detail : ComponentBase
         }
 
         _pendingSelection = null;
-        await JS.InvokeVoidAsync("glpiNg.setEditorSelection", ContentEditorId, start, end);
+        await JS.InvokeVoidAsync("glping.setEditorSelection", ContentEditorId, start, end);
     }
 
     private bool IsNew => _article is not null && _article.Id == 0;

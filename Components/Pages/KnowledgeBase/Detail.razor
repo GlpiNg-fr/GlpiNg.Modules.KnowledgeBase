@@ -17,20 +17,20 @@
 }
 else if (_article is not null)
 {
-    <div class="glpi-fiche-topbar">
-        <a class="glpi-fiche-pager-btn" href="/tools/knowledgebase" title="Retour à la liste">
+    <div class="glping-fiche-topbar">
+        <a class="glping-fiche-pager-btn" href="/tools/knowledgebase" title="Retour à la liste">
             <i class="ti ti-list"></i>
         </a>
-        <div class="glpi-fiche-crumb">
+        <div class="glping-fiche-crumb">
             <i class="ti ti-book"></i>
             <span>@(IsNew ? "Nouvel article" : $"Article - {_article.Subject}")</span>
         </div>
-        <div class="glpi-fiche-toolbar">
+        <div class="glping-fiche-toolbar">
             @if (_editMode)
             {
                 <button type="button" class="btn btn-sm" disabled="@_isSaving" @onclick="CancelEdit">Annuler</button>
                 <button type="button" class="btn btn-sm btn-primary" disabled="@(_isSaving || !CanSave)" @onclick="SaveAsync">
-                    <i class="ti ti-device-floppy me-1 @(_isSaving ? "glpi-spin" : "")"></i>Enregistrer
+                    <i class="ti ti-device-floppy me-1 @(_isSaving ? "glping-spin" : "")"></i>Enregistrer
                 </button>
             }
             else
@@ -67,28 +67,28 @@ else if (_article is not null)
         </div>
     }
 
-    <div class="glpi-fiche-layout">
-        <aside class="glpi-fiche-sidebar">
+    <div class="glping-fiche-layout">
+        <aside class="glping-fiche-sidebar">
             @foreach ((string Key, string Icon, string Label, int? Count) tab in Tabs)
             {
-                <button type="button" class="glpi-fiche-tab-item @(_activeTab == tab.Key ? "active" : "")" @onclick="() => _activeTab = tab.Key">
+                <button type="button" class="glping-fiche-tab-item @(_activeTab == tab.Key ? "active" : "")" @onclick="() => _activeTab = tab.Key">
                     <i class="ti @tab.Icon"></i>
                     <span>@tab.Label</span>
                     @if (tab.Count is { } count)
                     {
-                        <span class="glpi-fiche-tab-count">@count</span>
+                        <span class="glping-fiche-tab-count">@count</span>
                     }
                 </button>
             }
         </aside>
 
-        <div class="glpi-fiche-panel">
+        <div class="glping-fiche-panel">
             @switch (_activeTab)
             {
                 case "article":
                     @if (_editMode)
                     {
-                        <div class="glpi-fiche-form">
+                        <div class="glping-fiche-form">
                             <div class="mb-3">
                                 <label class="form-label" for="kb-subject">Sujet</label>
                                 <input id="kb-subject" class="form-control" @bind="_article.Subject" @bind:event="oninput" placeholder="Question ou titre de l'article" />
@@ -142,14 +142,14 @@ else if (_article is not null)
 
                             <label class="form-label" for="@ContentEditorId">Contenu</label>
 
-                            <div class="glpi-md-editor">
-                                <div class="glpi-md-editor-bar">
+                            <div class="glping-md-editor">
+                                <div class="glping-md-editor-bar">
                                     <div class="btn-group btn-group-sm" role="group" aria-label="Mise en forme">
                                         @foreach (EditorCommand command in EditorCommands)
                                         {
                                             @if (command.IsSeparator)
                                             {
-                                                <span class="glpi-md-editor-sep"></span>
+                                                <span class="glping-md-editor-sep"></span>
                                             }
                                             else
                                             {
@@ -173,13 +173,13 @@ else if (_article is not null)
 
                                 @* Le textarea reste monté en aperçu (caché) : le démonter ferait perdre la
                                    position du curseur et la pile d'annulation du navigateur à chaque bascule. *@
-                                <textarea id="@ContentEditorId" class="form-control glpi-md-editor-input @(_editorPreview ? "d-none" : "")"
+                                <textarea id="@ContentEditorId" class="form-control glping-md-editor-input @(_editorPreview ? "d-none" : "")"
                                           rows="18" @bind="_article.Content" @bind:event="oninput"
                                           placeholder="Réponse, procédure, contournement... (Markdown accepté)"></textarea>
 
                                 @if (_editorPreview)
                                 {
-                                    <div class="glpi-md-editor-preview glpi-kb-content">
+                                    <div class="glping-md-editor-preview glping-kb-content">
                                         @if (string.IsNullOrWhiteSpace(_article.Content))
                                         {
                                             <span class="text-secondary">Rien à prévisualiser pour l'instant.</span>
@@ -244,7 +244,7 @@ else if (_article is not null)
                             }
                         </div>
 
-                        <div class="glpi-kb-content">@((MarkupString)MarkdownRenderer.ToHtml(_article.Content))</div>
+                        <div class="glping-kb-content">@((MarkupString)MarkdownRenderer.ToHtml(_article.Content))</div>
                     }
                     break;
 
@@ -388,7 +388,7 @@ else if (_article is not null)
                                     {
                                         <tr>
                                             <td colspan="5">
-                                                <div class="border rounded p-3 glpi-kb-content">@((MarkupString)MarkdownRenderer.ToHtml(revision.Content))</div>
+                                                <div class="border rounded p-3 glping-kb-content">@((MarkupString)MarkdownRenderer.ToHtml(revision.Content))</div>
                                             </td>
                                         </tr>
                                     }
@@ -545,7 +545,7 @@ else if (_article is not null)
                                     {
                                         @* Rendu par le même convertisseur que le contenu de l'article : une note
                                            est du Markdown, et n'interprète donc jamais le HTML qu'on y collerait. *@
-                                        <div class="glpi-kb-content">@((MarkupString)MarkdownRenderer.ToHtml(note.Content))</div>
+                                        <div class="glping-kb-content">@((MarkupString)MarkdownRenderer.ToHtml(note.Content))</div>
 
                                         <div class="d-flex align-items-center justify-content-between mt-2">
                                             <div class="text-secondary small">
