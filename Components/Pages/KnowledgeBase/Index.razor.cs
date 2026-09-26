@@ -225,6 +225,6 @@ public partial class Index : ComponentBase
         return flat.Length <= 160 ? flat : flat[..160] + "…";
     }
 
-    private static string LastChange(KnowledgeBaseArticle article)
-        => (article.UpdatedAt ?? article.CreatedAt).ToLocalTime().ToString("dd/MM/yyyy");
+    private string LastChange(KnowledgeBaseArticle article)
+        => Display.Date(article.UpdatedAt ?? article.CreatedAt)!;
 }

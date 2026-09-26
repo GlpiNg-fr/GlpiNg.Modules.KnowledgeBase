@@ -222,11 +222,11 @@ else if (_article is not null)
                         <div class="text-secondary small mb-3">
                             <i class="ti ti-folder me-1"></i>@(_article.Category?.Name ?? "Sans catégorie")
                             <span class="ms-3"><i class="ti ti-user me-1"></i>@(_article.AuthorName ?? "Inconnu")</span>
-                            <span class="ms-3"><i class="ti ti-calendar-plus me-1"></i>Créé le @_article.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                            <span class="ms-3"><i class="ti ti-calendar-plus me-1"></i>Créé le @Display.Date(_article.CreatedAt)</span>
                             @if (_article.UpdatedAt is { } updatedAt)
                             {
                                 <span class="ms-3">
-                                    <i class="ti ti-pencil me-1"></i>Modifié le @updatedAt.ToLocalTime().ToString("dd/MM/yyyy")
+                                    <i class="ti ti-pencil me-1"></i>Modifié le @Display.Date(updatedAt)
                                     @if (_article.LastEditorName is { Length: > 0 } editor)
                                     {
                                         <text> par @editor</text>
@@ -236,11 +236,11 @@ else if (_article is not null)
                             <span class="ms-3"><i class="ti ti-eye me-1"></i>@_article.ViewCount consultation@(_article.ViewCount > 1 ? "s" : "")</span>
                             @if (_article.VisibleFrom is { } visibleFrom)
                             {
-                                <span class="ms-3"><i class="ti ti-calendar-up me-1"></i>Visible depuis le @visibleFrom.ToString("dd/MM/yyyy")</span>
+                                <span class="ms-3"><i class="ti ti-calendar-up me-1"></i>Visible depuis le @Display.LocalDate(visibleFrom)</span>
                             }
                             @if (_article.VisibleUntil is { } visibleUntil)
                             {
-                                <span class="ms-3"><i class="ti ti-calendar-down me-1"></i>Visible jusqu'au @visibleUntil.ToString("dd/MM/yyyy")</span>
+                                <span class="ms-3"><i class="ti ti-calendar-down me-1"></i>Visible jusqu'au @Display.LocalDate(visibleUntil)</span>
                             }
                         </div>
 
@@ -370,7 +370,7 @@ else if (_article is not null)
                                 {
                                     <tr>
                                         <td>@revision.Number</td>
-                                        <td>@revision.RevisedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>@Display.DateTime(revision.RevisedAt)</td>
                                         <td>@(revision.EditorName ?? "—")</td>
                                         <td>@revision.Subject</td>
                                         <td class="text-nowrap">
@@ -473,7 +473,7 @@ else if (_article is not null)
                                             <td>@document.Name</td>
                                             <td class="text-secondary">@document.FileName</td>
                                             <td class="text-secondary text-nowrap">@FormatSize(document.SizeBytes)</td>
-                                            <td class="text-secondary text-nowrap">@document.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                            <td class="text-secondary text-nowrap">@Display.Date(document.CreatedAt)</td>
                                             <td class="text-nowrap">
                                                 @if (document.IsContentMissing)
                                                 {
@@ -551,12 +551,12 @@ else if (_article is not null)
                                             <div class="text-secondary small">
                                                 <i class="ti ti-user me-1"></i>@note.AuthorName
                                                 <span class="ms-2">
-                                                    <i class="ti ti-calendar me-1"></i>@note.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                                    <i class="ti ti-calendar me-1"></i>@Display.DateTime(note.CreatedAt)
                                                 </span>
                                                 @if (note.UpdatedAt is { } updated)
                                                 {
                                                     <span class="ms-2">
-                                                        <i class="ti ti-pencil me-1"></i>Modifiée le @updated.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                                        <i class="ti ti-pencil me-1"></i>Modifiée le @Display.DateTime(updated)
                                                         @if (note.LastEditorName is { Length: > 0 } editor)
                                                         {
                                                             <text> par @editor</text>
@@ -621,11 +621,11 @@ else if (_article is not null)
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (KnowledgeBaseArticleHistoryEntry entry in _historyEntries)
+                                    @foreach (KnowledgeBaseArticleHistoryEntry entry in Display.Chronological(_historyEntries, entry => entry.OccurredAt))
                                     {
                                         <tr>
                                             <td>@entry.Id</td>
-                                            <td class="text-nowrap">@entry.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td class="text-nowrap">@Display.DateTime(entry.OccurredAt)</td>
                                             <td>@entry.User</td>
                                             <td>@entry.Field</td>
                                             <td>@entry.Description</td>
