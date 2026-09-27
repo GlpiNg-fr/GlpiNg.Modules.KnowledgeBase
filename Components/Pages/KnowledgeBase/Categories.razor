@@ -1,15 +1,15 @@
 @page "/tools/knowledgebase/categories"
 @rendermode InteractiveServer
 
-<PageTitle>Catégories de la base de connaissances — GlpiNg</PageTitle>
+<PageTitle>@T("Catégories de la base de connaissances — GlpiNg")</PageTitle>
 
 <div class="glping-list-page">
     <div class="card">
         <div class="card-header d-flex align-items-center justify-content-between glping-list-toolbar">
-            <h3 class="card-title mb-0"><i class="ti ti-category me-1"></i>Catégories</h3>
+            <h3 class="card-title mb-0"><i class="ti ti-category me-1"></i>@T("Catégories")</h3>
             <div class="btn-list align-items-center">
-                <a href="/tools/knowledgebase" class="btn"><i class="ti ti-arrow-left me-1"></i>Retour aux articles</a>
-                <button type="button" class="btn btn-icon" @onclick="LoadAsync" title="Rafraîchir">
+                <a href="/tools/knowledgebase" class="btn"><i class="ti ti-arrow-left me-1"></i>@T("Retour aux articles")</a>
+                <button type="button" class="btn btn-icon" @onclick="LoadAsync" title="@(T("Rafraîchir"))">
                     <i class="ti ti-refresh"></i>
                 </button>
             </div>
@@ -18,14 +18,14 @@
         <div class="card-body border-bottom">
             <div class="row g-2 align-items-end">
                 <div class="col-md-4">
-                    <label class="form-label" for="kbc-name">Nouvelle catégorie</label>
-                    <input id="kbc-name" class="form-control" placeholder="Nom" @bind="_newName" @bind:event="oninput" />
+                    <label class="form-label" for="kbc-name">@T("Nouvelle catégorie")</label>
+                    <input id="kbc-name" class="form-control" placeholder="@(T("Nom"))" @bind="_newName" @bind:event="oninput" />
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label" for="kbc-parent">Catégorie parente</label>
+                    <label class="form-label" for="kbc-parent">@T("Catégorie parente")</label>
                     <select id="kbc-parent" class="form-select" value="@_newParentId"
                             @onchange="@((ChangeEventArgs e) => _newParentId = (string?)e.Value ?? string.Empty)">
-                        <option value="">Aucune (racine)</option>
+                        <option value="">@T("Aucune (racine)")</option>
                         @foreach ((KnowledgeBaseCategory category, int depth) in _tree)
                         {
                             <option value="@category.Id">@(new string('\u00A0', depth * 4))@category.Name</option>
@@ -33,11 +33,11 @@
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label" for="kbc-comment">Commentaire</label>
+                    <label class="form-label" for="kbc-comment">@T("Commentaire")</label>
                     <div class="d-flex gap-2">
-                        <input id="kbc-comment" class="form-control" placeholder="Facultatif" @bind="_newComment" />
+                        <input id="kbc-comment" class="form-control" placeholder="@(T("Facultatif"))" @bind="_newComment" />
                         <button type="button" class="btn btn-primary text-nowrap" disabled="@(string.IsNullOrWhiteSpace(_newName))" @onclick="CreateAsync">
-                            <i class="ti ti-plus me-1"></i>Ajouter
+                            <i class="ti ti-plus me-1"></i>@T("Ajouter")
                         </button>
                     </div>
                 </div>
@@ -48,9 +48,9 @@
             <table class="table table-vcenter card-table">
                 <thead>
                     <tr>
-                        <th>Catégorie</th>
-                        <th>Commentaire</th>
-                        <th class="text-end">Articles</th>
+                        <th>@T("Catégorie")</th>
+                        <th>@T("Commentaire")</th>
+                        <th class="text-end">@T("Articles")</th>
                         <th class="w-1"></th>
                     </tr>
                 </thead>
@@ -59,7 +59,7 @@
                     {
                         <tr>
                             <td colspan="4" class="text-center text-secondary py-4">
-                                Aucune catégorie : les articles se rangent dans « Sans catégorie » tant qu'il n'y en a pas.
+                                @T("Aucune catégorie : les articles se rangent dans « Sans catégorie » tant qu'il n'y en a pas.")
                             </td>
                         </tr>
                     }
@@ -74,7 +74,7 @@
                                         <input class="form-control form-control-sm" @bind="_editName" @bind:event="oninput" />
                                         <select class="form-select form-select-sm" value="@_editParentId"
                                                 @onchange="@((ChangeEventArgs e) => _editParentId = (string?)e.Value ?? string.Empty)">
-                                            <option value="">Aucune (racine)</option>
+                                            <option value="">@T("Aucune (racine)")</option>
                                             @foreach ((KnowledgeBaseCategory candidate, int candidateDepth) in _tree)
                                             {
                                                 @* Une catégorie ne peut pas devenir sa propre descendante : la branche
@@ -93,7 +93,7 @@
                                     <button type="button" class="btn btn-sm btn-primary" disabled="@string.IsNullOrWhiteSpace(_editName)" @onclick="SaveEditAsync">
                                         <i class="ti ti-device-floppy"></i>
                                     </button>
-                                    <button type="button" class="btn btn-sm" @onclick="() => _editingId = null">Annuler</button>
+                                    <button type="button" class="btn btn-sm" @onclick="() => _editingId = null">@T("Annuler")</button>
                                 </td>
                             }
                             else
@@ -106,10 +106,10 @@
                                 <td class="text-secondary">@(string.IsNullOrWhiteSpace(category.Comment) ? "—" : category.Comment)</td>
                                 <td class="text-end">@ArticleCount(category.Id)</td>
                                 <td class="text-nowrap">
-                                    <button type="button" class="btn btn-icon btn-sm" title="Renommer / déplacer" @onclick="() => StartEdit(category)">
+                                    <button type="button" class="btn btn-icon btn-sm" title="@(T("Renommer / déplacer"))" @onclick="() => StartEdit(category)">
                                         <i class="ti ti-pencil"></i>
                                     </button>
-                                    <button type="button" class="btn btn-icon btn-sm btn-ghost-danger" title="Supprimer" @onclick="() => _confirmDeleteId = category.Id">
+                                    <button type="button" class="btn btn-icon btn-sm btn-ghost-danger" title="@(T("Supprimer"))" @onclick="() => _confirmDeleteId = category.Id">
                                         <i class="ti ti-trash"></i>
                                     </button>
                                 </td>
@@ -123,19 +123,19 @@
                                     <div class="alert alert-warning d-flex align-items-center justify-content-between gap-3 mb-0">
                                         <div>
                                             <i class="ti ti-alert-triangle me-1"></i>
-                                            Supprimer « @category.Name » ?
+                                            @T("Supprimer « {0} » ?", category.Name)
                                             @if (DirectChildCount(category.Id) is int children and > 0)
                                             {
-                                                <text> Ses @children sous-catégorie(s) remonteront d'un niveau.</text>
+                                                <text> @T("Ses {0} sous-catégorie(s) remonteront d'un niveau.", children)</text>
                                             }
                                             @if (ArticleCount(category.Id) is int articles and > 0)
                                             {
-                                                <text> Ses @articles article(s) seront rattachés à @ParentLabel(category) — aucun n'est supprimé.</text>
+                                                <text> @T("Ses {0} article(s) seront rattachés à", articles) @ParentLabel(category) @T("— aucun n'est supprimé.")</text>
                                             }
                                         </div>
                                         <div class="btn-list">
-                                            <button type="button" class="btn btn-sm" @onclick="() => _confirmDeleteId = null">Annuler</button>
-                                            <button type="button" class="btn btn-sm btn-danger" @onclick="() => DeleteAsync(category)">Supprimer</button>
+                                            <button type="button" class="btn btn-sm" @onclick="() => _confirmDeleteId = null">@T("Annuler")</button>
+                                            <button type="button" class="btn btn-sm btn-danger" @onclick="() => DeleteAsync(category)">@T("Supprimer")</button>
                                         </div>
                                     </div>
                                 </td>

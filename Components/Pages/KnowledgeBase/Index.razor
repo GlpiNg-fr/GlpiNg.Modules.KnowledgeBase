@@ -1,7 +1,7 @@
 ﻿@page "/tools/knowledgebase"
 @rendermode InteractiveServer
 
-<PageTitle>Base de connaissances — GlpiNg</PageTitle>
+<PageTitle>@T("Base de connaissances — GlpiNg")</PageTitle>
 
 <div class="glping-list-page">
     <div class="card">
@@ -9,33 +9,33 @@
             <div class="btn-list">
                 <div class="input-icon" style="width: 280px;">
                     <span class="input-icon-addon"><i class="ti ti-search"></i></span>
-                    <input type="text" class="form-control" placeholder="Rechercher un article..." value="@_search"
+                    <input type="text" class="form-control" placeholder="@(T("Rechercher un article..."))" value="@_search"
                            @oninput="@((ChangeEventArgs e) => OnSearchInput((string?)e.Value))" />
                 </div>
 
                 <select class="form-select w-auto" value="@_sort"
                         @onchange="@((ChangeEventArgs e) => SetSort((string?)e.Value))">
-                    <option value="recent">Les plus récents</option>
-                    <option value="views">Les plus consultés</option>
-                    <option value="alpha">Ordre alphabétique</option>
+                    <option value="recent">@T("Les plus récents")</option>
+                    <option value="views">@T("Les plus consultés")</option>
+                    <option value="alpha">@T("Ordre alphabétique")</option>
                 </select>
 
                 <label class="glping-switch-inline d-flex align-items-center gap-2 mb-0">
                     <input class="form-check-input m-0" type="checkbox" checked="@_faqOnly"
                            @onchange="@((ChangeEventArgs e) => SetFaqOnly((bool)e.Value!))" />
-                    <span>FAQ uniquement</span>
+                    <span>@T("FAQ uniquement")</span>
                 </label>
             </div>
 
             <div class="btn-list align-items-center">
-                <a href="/tools/knowledgebase/categories" class="btn btn-icon" title="Gérer les catégories">
+                <a href="/tools/knowledgebase/categories" class="btn btn-icon" title="@(T("Gérer les catégories"))">
                     <i class="ti ti-category"></i>
                 </a>
-                <button type="button" class="btn btn-icon" @onclick="LoadAsync" title="Rafraîchir">
+                <button type="button" class="btn btn-icon" @onclick="LoadAsync" title="@(T("Rafraîchir"))">
                     <i class="ti ti-refresh"></i>
                 </button>
                 <a href="/tools/knowledgebase/new" class="btn btn-primary">
-                    <i class="ti ti-plus me-1"></i>Nouvel article
+                    <i class="ti ti-plus me-1"></i>@T("Nouvel article")
                 </a>
             </div>
         </div>
@@ -45,7 +45,7 @@
                 <div class="list-group">
                     <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(_selectedCategoryId is null ? "active" : "")"
                             @onclick="() => SelectCategory(null)">
-                        <span><i class="ti ti-books me-1"></i>Toutes les catégories</span>
+                        <span><i class="ti ti-books me-1"></i>@T("Toutes les catégories")</span>
                         <span class="badge bg-secondary-lt">@_visibleArticles.Count</span>
                     </button>
 
@@ -64,7 +64,7 @@
                     {
                         <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(_selectedCategoryId == UncategorizedId ? "active" : "")"
                                 @onclick="() => SelectCategory(UncategorizedId)">
-                            <span><i class="ti ti-folder-off me-1"></i>Sans catégorie</span>
+                            <span><i class="ti ti-folder-off me-1"></i>@T("Sans catégorie")</span>
                             <span class="badge bg-secondary-lt">@_uncategorizedCount</span>
                         </button>
                     }
@@ -76,14 +76,14 @@
                 <div class="flex-fill text-center text-secondary py-5">
                     @if (_visibleArticles.Count == 0)
                     {
-                        <div>La base de connaissances est vide.</div>
+                        <div>@T("La base de connaissances est vide.")</div>
                         <a href="/tools/knowledgebase/new" class="btn btn-primary mt-3">
-                            <i class="ti ti-plus me-1"></i>Rédiger le premier article
+                            <i class="ti ti-plus me-1"></i>@T("Rédiger le premier article")
                         </a>
                     }
                     else
                     {
-                        <div>Aucun article ne correspond à cette recherche.</div>
+                        <div>@T("Aucun article ne correspond à cette recherche.")</div>
                     }
                 </div>
             }
@@ -95,10 +95,10 @@
                     <table class="table table-vcenter card-table">
                         <thead>
                             <tr>
-                                <th>Sujet</th>
-                                <th style="width: 14rem;">Catégorie</th>
-                                <th style="width: 6rem;" class="text-end">Vues</th>
-                                <th style="width: 11rem;">Dernière modification</th>
+                                <th>@T("Sujet")</th>
+                                <th style="width: 14rem;">@T("Catégorie")</th>
+                                <th style="width: 6rem;" class="text-end">@T("Vues")</th>
+                                <th style="width: 11rem;">@T("Dernière modification")</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -109,18 +109,18 @@
                                         <div class="d-flex align-items-center gap-2 flex-wrap">
                                             @if (article.IsPinned)
                                             {
-                                                <i class="ti ti-pin-filled text-secondary" title="Épinglé"></i>
+                                                <i class="ti ti-pin-filled text-secondary" title="@(T("Épinglé"))"></i>
                                             }
                                             <a href="/tools/knowledgebase/article/@article.Id" class="fw-semibold text-reset">
                                                 @article.Subject
                                             </a>
                                             @if (article.IsFaq)
                                             {
-                                                <span class="badge bg-green-lt">FAQ</span>
+                                                <span class="badge bg-green-lt">@T("FAQ")</span>
                                             }
                                             @if (article.Targets.Count > 0)
                                             {
-                                                <span class="badge bg-orange-lt" title="Visibilité restreinte">
+                                                <span class="badge bg-orange-lt" title="@(T("Visibilité restreinte"))">
                                                     <i class="ti ti-lock"></i>
                                                 </span>
                                             }
@@ -128,7 +128,7 @@
                                                lui évite de croire publié ce que personne d'autre ne voit. *@
                                             @if (!KnowledgeBaseService.IsPublished(article, DateTime.UtcNow))
                                             {
-                                                <span class="badge bg-orange-lt" title="Hors période de visibilité : seul vous le voyez">
+                                                <span class="badge bg-orange-lt" title="@(T("Hors période de visibilité : seul vous le voyez"))">
                                                     <i class="ti ti-clock-off"></i>
                                                 </span>
                                             }
@@ -136,7 +136,7 @@
                                         <div class="text-secondary small">@Excerpt(article)</div>
                                     </td>
                                     <td class="text-secondary">
-                                        <i class="ti ti-folder me-1"></i>@(article.Category?.Name ?? "Sans catégorie")
+                                        <i class="ti ti-folder me-1"></i>@(article.Category?.Name ?? T("Sans catégorie"))
                                     </td>
                                     <td class="text-secondary text-end">@article.ViewCount</td>
                                     <td class="text-secondary text-nowrap">@LastChange(article)</td>
@@ -153,7 +153,7 @@
            ce qui manquait quand elle était posée sous la liste. *@
         <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div class="d-flex align-items-center gap-2 text-secondary">
-                <span>Éléments par page</span>
+                <span>@T("Éléments par page")</span>
                 <select class="form-select form-select-sm w-auto" value="@_pageSize"
                         @onchange="@((ChangeEventArgs e) => SetPageSize(int.Parse((string)e.Value!)))">
                     @foreach (int size in PageSizeOptions)
@@ -167,7 +167,7 @@
             {
                 <div class="d-flex align-items-center gap-3">
                     <span class="text-secondary">
-                        @(((_currentPage - 1) * _pageSize) + 1)–@(Math.Min(_currentPage * _pageSize, _filtered.Count)) sur @_filtered.Count
+                        @T("{0}–{1} sur {2}", ((_currentPage - 1) * _pageSize) + 1, Math.Min(_currentPage * _pageSize, _filtered.Count), _filtered.Count)
                     </span>
                     <ul class="pagination pagination-sm m-0">
                         <li class="page-item @(_currentPage <= 1 ? "disabled" : "")">
@@ -175,7 +175,7 @@
                                 <i class="ti ti-chevron-left"></i>
                             </button>
                         </li>
-                        <li class="page-item disabled"><span class="page-link">Page @_currentPage / @TotalPages</span></li>
+                        <li class="page-item disabled"><span class="page-link">@T("Page {0} / {1}", _currentPage, TotalPages)</span></li>
                         <li class="page-item @(_currentPage >= TotalPages ? "disabled" : "")">
                             <button type="button" class="page-link" @onclick="() => GoToPage(_currentPage + 1)" disabled="@(_currentPage >= TotalPages)">
                                 <i class="ti ti-chevron-right"></i>

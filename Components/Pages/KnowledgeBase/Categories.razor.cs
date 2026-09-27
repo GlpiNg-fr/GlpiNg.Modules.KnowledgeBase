@@ -3,6 +3,7 @@ using GlpiNg.Modules.KnowledgeBase.Models;
 using GlpiNg.Modules.KnowledgeBase.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
+using GlpiNg.Modules.Abstractions.Localization;
 
 namespace GlpiNg.Modules.KnowledgeBase.Components.Pages.KnowledgeBase;
 
@@ -65,7 +66,7 @@ public partial class Categories : ComponentBase
     private string ParentLabel(KnowledgeBaseCategory category)
         => category.ParentId is int parentId && _categories.FirstOrDefault(item => item.Id == parentId) is { } parent
             ? $"« {parent.Name} »"
-            : "« Sans catégorie »";
+            : Tr.T("« Sans catégorie »");
 
     private async Task CreateAsync()
     {
@@ -91,12 +92,12 @@ public partial class Categories : ComponentBase
             _newComment = string.Empty;
             _newParentId = string.Empty;
 
-            ToastService.Notify(new ToastMessage(ToastType.Success, "Catégorie créée."));
+            ToastService.Notify(new ToastMessage(ToastType.Success, Tr.T("Catégorie créée.")));
             await LoadAsync();
         }
         catch (Exception ex) when (ex is InvalidOperationException or DbUpdateException)
         {
-            ToastService.Notify(new ToastMessage(ToastType.Danger, $"Échec de la création : {ex.Message}"));
+            ToastService.Notify(new ToastMessage(ToastType.Danger, Tr.T("Échec de la création : {0}", ex.Message)));
         }
     }
 
@@ -145,12 +146,12 @@ public partial class Categories : ComponentBase
 
             await db.SaveChangesAsync();
 
-            ToastService.Notify(new ToastMessage(ToastType.Success, "Catégorie enregistrée."));
+            ToastService.Notify(new ToastMessage(ToastType.Success, Tr.T("Catégorie enregistrée.")));
             await LoadAsync();
         }
         catch (Exception ex) when (ex is InvalidOperationException or DbUpdateException)
         {
-            ToastService.Notify(new ToastMessage(ToastType.Danger, $"Échec de l'enregistrement : {ex.Message}"));
+            ToastService.Notify(new ToastMessage(ToastType.Danger, Tr.T("Échec de l'enregistrement : {0}", ex.Message)));
         }
     }
 
@@ -193,13 +194,13 @@ public partial class Categories : ComponentBase
 
             await db.SaveChangesAsync();
 
-            ToastService.Notify(new ToastMessage(ToastType.Success, "Catégorie supprimée."));
+            ToastService.Notify(new ToastMessage(ToastType.Success, Tr.T("Catégorie supprimée.")));
             await LoadAsync();
         }
         catch (Exception ex) when (ex is InvalidOperationException or DbUpdateException)
         {
             _confirmDeleteId = null;
-            ToastService.Notify(new ToastMessage(ToastType.Danger, $"Échec de la suppression : {ex.Message}"));
+            ToastService.Notify(new ToastMessage(ToastType.Danger, Tr.T("Échec de la suppression : {0}", ex.Message)));
         }
     }
 }

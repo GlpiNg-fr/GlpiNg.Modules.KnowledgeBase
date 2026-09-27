@@ -1,3 +1,4 @@
+using GlpiNg.Modules.Abstractions.Localization;
 ﻿using BlazorBootstrap;
 using GlpiNg.Modules.Abstractions.Directory;
 using GlpiNg.Modules.Abstractions.Documents;
@@ -417,7 +418,7 @@ public partial class Detail : ComponentBase
             int id = await Service.SaveAsync(_article, await CurrentUserNameAsync());
 
             ToastService.Notify(new ToastMessage(ToastType.Success,
-                wasNew ? "Article créé." : "Article enregistré."));
+                wasNew ? Tr.T("Article créé.") : Tr.T("Article enregistré.")));
 
             if (wasNew)
             {
@@ -433,7 +434,7 @@ public partial class Detail : ComponentBase
         {
             // Typiquement un droit d'écriture refusé par le DbContext de l'hôte sur la section
             // « Outils » : le message brut est plus utile qu'un échec muet.
-            ToastService.Notify(new ToastMessage(ToastType.Danger, $"Échec de l'enregistrement : {ex.Message}"));
+            ToastService.Notify(new ToastMessage(ToastType.Danger, Tr.T("Échec de l'enregistrement : {0}", ex.Message)));
         }
         finally
         {
@@ -451,13 +452,13 @@ public partial class Detail : ComponentBase
         try
         {
             await Service.DeleteArticleAsync(_article.Id);
-            ToastService.Notify(new ToastMessage(ToastType.Success, "Article supprimé."));
+            ToastService.Notify(new ToastMessage(ToastType.Success, Tr.T("Article supprimé.")));
             Nav.NavigateTo("/tools/knowledgebase");
         }
         catch (Exception ex) when (ex is InvalidOperationException or DbUpdateException)
         {
             _confirmDelete = false;
-            ToastService.Notify(new ToastMessage(ToastType.Danger, $"Échec de la suppression : {ex.Message}"));
+            ToastService.Notify(new ToastMessage(ToastType.Danger, Tr.T("Échec de la suppression : {0}", ex.Message)));
         }
     }
 
@@ -521,7 +522,7 @@ public partial class Detail : ComponentBase
         }
         catch (Exception ex) when (ex is InvalidOperationException or DbUpdateException)
         {
-            ToastService.Notify(new ToastMessage(ToastType.Danger, $"Échec de l'enregistrement des cibles : {ex.Message}"));
+            ToastService.Notify(new ToastMessage(ToastType.Danger, Tr.T("Échec de l'enregistrement des cibles : {0}", ex.Message)));
         }
     }
 
@@ -640,11 +641,11 @@ public partial class Detail : ComponentBase
         catch (IOException ex)
         {
             // Dépassement du plafond d'InputFile : le message brut parle de flux, pas de taille.
-            _uploadError = $"Fichier refusé (taille maximale {MaxUploadBytes / (1024 * 1024)} Mo) : {ex.Message}";
+            _uploadError = Tr.T("Fichier refusé (taille maximale {0} Mo) : {1}", MaxUploadBytes / (1024 * 1024), ex.Message);
         }
         catch (Exception ex) when (ex is InvalidOperationException or UnauthorizedAccessException)
         {
-            _uploadError = $"Échec du téléversement : {ex.Message}";
+            _uploadError = Tr.T("Échec du téléversement : {0}", ex.Message);
         }
         finally
         {
@@ -688,9 +689,9 @@ public partial class Detail : ComponentBase
     private static string FormatSize(long bytes) => bytes switch
     {
         < 1024 => $"{bytes} o",
-        < 1024 * 1024 => $"{bytes / 1024.0:0.#} Ko",
-        < 1024 * 1024 * 1024 => $"{bytes / (1024.0 * 1024):0.#} Mo",
-        _ => $"{bytes / (1024.0 * 1024 * 1024):0.##} Go",
+        < 1024 * 1024 => Tr.T("{0:0.#} Ko", bytes / 1024.0),
+        < 1024 * 1024 * 1024 => Tr.T("{0:0.#} Mo", bytes / (1024.0 * 1024)),
+        _ => Tr.T("{0:0.##} Go", bytes / (1024.0 * 1024 * 1024)),
     };
 
     private void ToggleRevision(int revisionId)
@@ -714,13 +715,13 @@ public partial class Detail : ComponentBase
         try
         {
             await Service.SaveAsync(_article, await CurrentUserNameAsync());
-            ToastService.Notify(new ToastMessage(ToastType.Success, $"Révision n°{revision.Number} restaurée."));
+            ToastService.Notify(new ToastMessage(ToastType.Success, Tr.T("Révision n°{0} restaurée.", revision.Number)));
             await LoadArticleAsync(_article.Id);
             _activeTab = "article";
         }
         catch (Exception ex) when (ex is InvalidOperationException or DbUpdateException)
         {
-            ToastService.Notify(new ToastMessage(ToastType.Danger, $"Échec de la restauration : {ex.Message}"));
+            ToastService.Notify(new ToastMessage(ToastType.Danger, Tr.T("Échec de la restauration : {0}", ex.Message)));
         }
     }
 
@@ -747,17 +748,17 @@ public partial class Detail : ComponentBase
 
         if (target.Type is PrincipalKind.Entity)
         {
-            return target.IsRecursive ? "Et sous-entités" : "Cette entité seule";
+            return target.IsRecursive ? Tr.T("Et sous-entités") : Tr.T("Cette entité seule");
         }
 
         if (target.ScopeEntityId is not int entityId)
         {
-            return "Toute l'installation";
+            return Tr.T("Toute l'installation");
         }
 
         string entity = _entityOptions.FirstOrDefault(option => option.Id == entityId)?.Name ?? $"#{entityId}";
 
-        return target.IsRecursive ? $"{entity} (et sous-entités)" : entity;
+        return target.IsRecursive ? Tr.T("{0} (et sous-entités)", entity) : entity;
     }
 
     /// <summary>

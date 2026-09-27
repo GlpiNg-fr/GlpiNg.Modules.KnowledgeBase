@@ -5,46 +5,46 @@
 @using GlpiNg.Modules.Abstractions.Notes
 @rendermode InteractiveServer
 
-<PageTitle>@(_article?.Subject ?? "Article") — GlpiNg</PageTitle>
+<PageTitle>@(_article?.Subject ?? T("Article")) — GlpiNg</PageTitle>
 
 @if (_notFound)
 {
     <div class="text-center text-secondary py-5">
         <i class="ti ti-book-off fs-1"></i>
-        <p class="mt-2">Cet article est introuvable, ou n'est pas visible avec vos habilitations.</p>
-        <a href="/tools/knowledgebase" class="btn btn-primary"><i class="ti ti-arrow-left me-1"></i>Retour à la base de connaissances</a>
+        <p class="mt-2">@T("Cet article est introuvable, ou n'est pas visible avec vos habilitations.")</p>
+        <a href="/tools/knowledgebase" class="btn btn-primary"><i class="ti ti-arrow-left me-1"></i>@T("Retour à la base de connaissances")</a>
     </div>
 }
 else if (_article is not null)
 {
     <div class="glping-fiche-topbar">
-        <a class="glping-fiche-pager-btn" href="/tools/knowledgebase" title="Retour à la liste">
+        <a class="glping-fiche-pager-btn" href="/tools/knowledgebase" title="@(T("Retour à la liste"))">
             <i class="ti ti-list"></i>
         </a>
         <div class="glping-fiche-crumb">
             <i class="ti ti-book"></i>
-            <span>@(IsNew ? "Nouvel article" : $"Article - {_article.Subject}")</span>
+            <span>@(IsNew ? T("Nouvel article") : $"Article - {_article.Subject}")</span>
         </div>
         <div class="glping-fiche-toolbar">
             @if (_editMode)
             {
-                <button type="button" class="btn btn-sm" disabled="@_isSaving" @onclick="CancelEdit">Annuler</button>
+                <button type="button" class="btn btn-sm" disabled="@_isSaving" @onclick="CancelEdit">@T("Annuler")</button>
                 <button type="button" class="btn btn-sm btn-primary" disabled="@(_isSaving || !CanSave)" @onclick="SaveAsync">
-                    <i class="ti ti-device-floppy me-1 @(_isSaving ? "glping-spin" : "")"></i>Enregistrer
+                    <i class="ti ti-device-floppy me-1 @(_isSaving ? "glping-spin" : "")"></i>@T("Enregistrer")
                 </button>
             }
             else
             {
                 <div class="dropdown">
                     <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="ti ti-dots-vertical me-1"></i>Actions
+                        <i class="ti ti-dots-vertical me-1"></i>@T("Actions")
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><button type="button" class="dropdown-item" @onclick="EnterEditMode"><i class="ti ti-pencil me-1"></i>Modifier</button></li>
+                        <li><button type="button" class="dropdown-item" @onclick="EnterEditMode"><i class="ti ti-pencil me-1"></i>@T("Modifier")</button></li>
                         <li><hr class="dropdown-divider" /></li>
                         <li>
                             <button type="button" class="dropdown-item text-danger" @onclick="() => _confirmDelete = true">
-                                <i class="ti ti-trash me-1"></i>Supprimer définitivement
+                                <i class="ti ti-trash me-1"></i>@T("Supprimer définitivement")
                             </button>
                         </li>
                     </ul>
@@ -58,11 +58,11 @@ else if (_article is not null)
         <div class="alert alert-danger d-flex align-items-center justify-content-between gap-3" role="alert">
             <div>
                 <i class="ti ti-alert-triangle me-1"></i>
-                Supprimer cet article, ses révisions et ses cibles ? Cette action est définitive.
+                @T("Supprimer cet article, ses révisions et ses cibles ? Cette action est définitive.")
             </div>
             <div class="btn-list">
-                <button type="button" class="btn btn-sm" @onclick="() => _confirmDelete = false">Annuler</button>
-                <button type="button" class="btn btn-sm btn-danger" @onclick="DeleteAsync">Supprimer</button>
+                <button type="button" class="btn btn-sm" @onclick="() => _confirmDelete = false">@T("Annuler")</button>
+                <button type="button" class="btn btn-sm btn-danger" @onclick="DeleteAsync">@T("Supprimer")</button>
             </div>
         </div>
     }
@@ -73,7 +73,7 @@ else if (_article is not null)
             {
                 <button type="button" class="glping-fiche-tab-item @(_activeTab == tab.Key ? "active" : "")" @onclick="() => _activeTab = tab.Key">
                     <i class="ti @tab.Icon"></i>
-                    <span>@tab.Label</span>
+                    <span>@T(tab.Label)</span>
                     @if (tab.Count is { } count)
                     {
                         <span class="glping-fiche-tab-count">@count</span>
@@ -90,16 +90,16 @@ else if (_article is not null)
                     {
                         <div class="glping-fiche-form">
                             <div class="mb-3">
-                                <label class="form-label" for="kb-subject">Sujet</label>
-                                <input id="kb-subject" class="form-control" @bind="_article.Subject" @bind:event="oninput" placeholder="Question ou titre de l'article" />
+                                <label class="form-label" for="kb-subject">@T("Sujet")</label>
+                                <input id="kb-subject" class="form-control" @bind="_article.Subject" @bind:event="oninput" placeholder="@(T("Question ou titre de l'article"))" />
                             </div>
 
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
-                                    <label class="form-label" for="kb-category">Catégorie</label>
+                                    <label class="form-label" for="kb-category">@T("Catégorie")</label>
                                     <select id="kb-category" class="form-select" value="@(_article.CategoryId?.ToString() ?? string.Empty)"
                                             @onchange="@((ChangeEventArgs e) => SetCategory((string?)e.Value))">
-                                        <option value="">Sans catégorie</option>
+                                        <option value="">@T("Sans catégorie")</option>
                                         @foreach ((KnowledgeBaseCategory category, int depth) in _categoryTree)
                                         {
                                             @* Espace insécable : un navigateur réduit les espaces ordinaires d'une <option>, l'indentation de l'arbre disparaîtrait. *@
@@ -110,41 +110,40 @@ else if (_article is not null)
                                 <div class="col-md-3 d-flex align-items-end">
                                     <label class="d-flex align-items-center gap-2 mb-2">
                                         <input class="form-check-input m-0" type="checkbox" @bind="_article.IsFaq" />
-                                        <span>Publier dans la FAQ</span>
+                                        <span>@T("Publier dans la FAQ")</span>
                                     </label>
                                 </div>
                                 <div class="col-md-3 d-flex align-items-end">
                                     <label class="d-flex align-items-center gap-2 mb-2">
                                         <input class="form-check-input m-0" type="checkbox" @bind="_article.IsPinned" />
-                                        <span>Épingler</span>
+                                        <span>@T("Épingler")</span>
                                     </label>
                                 </div>
                             </div>
 
                             <div class="row g-3 mb-3">
                                 <div class="col-md-3">
-                                    <label class="form-label" for="kb-visible-from">Visible à partir du</label>
+                                    <label class="form-label" for="kb-visible-from">@T("Visible à partir du")</label>
                                     <input id="kb-visible-from" class="form-control" type="date" value="@DateValue(_article.VisibleFrom)"
                                            @onchange="@((ChangeEventArgs e) => _article.VisibleFrom = ParseDate((string?)e.Value))" />
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label" for="kb-visible-until">Visible jusqu'au</label>
+                                    <label class="form-label" for="kb-visible-until">@T("Visible jusqu'au")</label>
                                     <input id="kb-visible-until" class="form-control" type="date" value="@DateValue(_article.VisibleUntil)"
                                            @onchange="@((ChangeEventArgs e) => _article.VisibleUntil = ParseDate((string?)e.Value))" />
                                 </div>
                                 <div class="col-md-6 d-flex align-items-end">
                                     <div class="text-secondary small mb-2">
-                                        Bornes facultatives. Hors de cette période, l'article n'est visible que de son auteur —
-                                        il n'est pas supprimé.
+                                        @T("Bornes facultatives. Hors de cette période, l'article n'est visible que de son auteur — il n'est pas supprimé.")
                                     </div>
                                 </div>
                             </div>
 
-                            <label class="form-label" for="@ContentEditorId">Contenu</label>
+                            <label class="form-label" for="@ContentEditorId">@T("Contenu")</label>
 
                             <div class="glping-md-editor">
                                 <div class="glping-md-editor-bar">
-                                    <div class="btn-group btn-group-sm" role="group" aria-label="Mise en forme">
+                                    <div class="btn-group btn-group-sm" role="group" aria-label="@(T("Mise en forme"))">
                                         @foreach (EditorCommand command in EditorCommands)
                                         {
                                             @if (command.IsSeparator)
@@ -153,7 +152,7 @@ else if (_article is not null)
                                             }
                                             else
                                             {
-                                                <button type="button" class="btn btn-icon" title="@command.Label" disabled="@_editorPreview"
+                                                <button type="button" class="btn btn-icon" title="@T(command.Label)" disabled="@_editorPreview"
                                                         @onclick="() => ApplyCommandAsync(command)">
                                                     <i class="ti @command.Icon"></i>
                                                 </button>
@@ -161,12 +160,12 @@ else if (_article is not null)
                                         }
                                     </div>
 
-                                    <div class="btn-group btn-group-sm ms-auto" role="group" aria-label="Affichage">
+                                    <div class="btn-group btn-group-sm ms-auto" role="group" aria-label="@(T("Affichage"))">
                                         <button type="button" class="btn @(_editorPreview ? "" : "active")" @onclick="() => _editorPreview = false">
-                                            <i class="ti ti-pencil me-1"></i>Rédaction
+                                            <i class="ti ti-pencil me-1"></i>@T("Rédaction")
                                         </button>
                                         <button type="button" class="btn @(_editorPreview ? "active" : "")" @onclick="() => _editorPreview = true">
-                                            <i class="ti ti-eye me-1"></i>Aperçu
+                                            <i class="ti ti-eye me-1"></i>@T("Aperçu")
                                         </button>
                                     </div>
                                 </div>
@@ -175,14 +174,14 @@ else if (_article is not null)
                                    position du curseur et la pile d'annulation du navigateur à chaque bascule. *@
                                 <textarea id="@ContentEditorId" class="form-control glping-md-editor-input @(_editorPreview ? "d-none" : "")"
                                           rows="18" @bind="_article.Content" @bind:event="oninput"
-                                          placeholder="Réponse, procédure, contournement... (Markdown accepté)"></textarea>
+                                          placeholder="@(T("Réponse, procédure, contournement... (Markdown accepté)"))"></textarea>
 
                                 @if (_editorPreview)
                                 {
                                     <div class="glping-md-editor-preview glping-kb-content">
                                         @if (string.IsNullOrWhiteSpace(_article.Content))
                                         {
-                                            <span class="text-secondary">Rien à prévisualiser pour l'instant.</span>
+                                            <span class="text-secondary">@T("Rien à prévisualiser pour l'instant.")</span>
                                         }
                                         else
                                         {
@@ -195,7 +194,7 @@ else if (_article is not null)
                             <div class="text-secondary small mt-1">
                                 Markdown : <code>**gras**</code>, <code>*italique*</code>, <code>## titre</code>,
                                 <code>- liste</code>, <code>[lien](url)</code>, <code>`code`</code>, tableaux.
-                                Le HTML écrit dans le contenu n'est pas interprété : il s'affiche tel quel.
+                                @T("Le HTML écrit dans le contenu n'est pas interprété : il s'affiche tel quel.")
                             </div>
                         </div>
                     }
@@ -205,42 +204,42 @@ else if (_article is not null)
                             <h2 class="mb-0">@_article.Subject</h2>
                             @if (_article.IsFaq)
                             {
-                                <span class="badge bg-green-lt">FAQ</span>
+                                <span class="badge bg-green-lt">@T("FAQ")</span>
                             }
                             @if (_article.IsPinned)
                             {
-                                <span class="badge bg-secondary-lt"><i class="ti ti-pin me-1"></i>Épinglé</span>
+                                <span class="badge bg-secondary-lt"><i class="ti ti-pin me-1"></i>@T("Épinglé")</span>
                             }
                             @* Seul l'auteur peut voir un article hors période : le lui signaler évite
                                qu'il croie publié ce que personne d'autre ne voit. *@
                             @if (!KnowledgeBaseService.IsPublished(_article, DateTime.UtcNow))
                             {
-                                <span class="badge bg-orange-lt"><i class="ti ti-clock-off me-1"></i>Hors période de visibilité</span>
+                                <span class="badge bg-orange-lt"><i class="ti ti-clock-off me-1"></i>@T("Hors période de visibilité")</span>
                             }
                         </div>
 
                         <div class="text-secondary small mb-3">
-                            <i class="ti ti-folder me-1"></i>@(_article.Category?.Name ?? "Sans catégorie")
-                            <span class="ms-3"><i class="ti ti-user me-1"></i>@(_article.AuthorName ?? "Inconnu")</span>
-                            <span class="ms-3"><i class="ti ti-calendar-plus me-1"></i>Créé le @Display.Date(_article.CreatedAt)</span>
+                            <i class="ti ti-folder me-1"></i>@(_article.Category?.Name ?? T("Sans catégorie"))
+                            <span class="ms-3"><i class="ti ti-user me-1"></i>@(_article.AuthorName ?? T("Inconnu"))</span>
+                            <span class="ms-3"><i class="ti ti-calendar-plus me-1"></i>@T("Créé le {0}", Display.Date(_article.CreatedAt))</span>
                             @if (_article.UpdatedAt is { } updatedAt)
                             {
                                 <span class="ms-3">
-                                    <i class="ti ti-pencil me-1"></i>Modifié le @Display.Date(updatedAt)
+                                    <i class="ti ti-pencil me-1"></i>@T("Modifié le {0}", Display.Date(updatedAt))
                                     @if (_article.LastEditorName is { Length: > 0 } editor)
                                     {
-                                        <text> par @editor</text>
+                                        <text> @T("par {0}", editor)</text>
                                     }
                                 </span>
                             }
                             <span class="ms-3"><i class="ti ti-eye me-1"></i>@_article.ViewCount consultation@(_article.ViewCount > 1 ? "s" : "")</span>
                             @if (_article.VisibleFrom is { } visibleFrom)
                             {
-                                <span class="ms-3"><i class="ti ti-calendar-up me-1"></i>Visible depuis le @Display.LocalDate(visibleFrom)</span>
+                                <span class="ms-3"><i class="ti ti-calendar-up me-1"></i>@T("Visible depuis le {0}", Display.LocalDate(visibleFrom))</span>
                             }
                             @if (_article.VisibleUntil is { } visibleUntil)
                             {
-                                <span class="ms-3"><i class="ti ti-calendar-down me-1"></i>Visible jusqu'au @Display.LocalDate(visibleUntil)</span>
+                                <span class="ms-3"><i class="ti ti-calendar-down me-1"></i>@T("Visible jusqu'au {0}", Display.LocalDate(visibleUntil))</span>
                             }
                         </div>
 
@@ -250,32 +249,28 @@ else if (_article is not null)
 
                 case "targets":
                     <p class="text-secondary">
-                        Sans aucune cible, l'article est visible de tous ceux qui accèdent à la base de connaissances,
-                        dans les limites du cloisonnement par entité. Dès qu'une cible est ajoutée, seuls les acteurs
-                        visés — et l'auteur — y ont accès.
+                        @T("Sans aucune cible, l'article est visible de tous ceux qui accèdent à la base de connaissances, dans les limites du cloisonnement par entité. Dès qu'une cible est ajoutée, seuls les acteurs visés — et l'auteur — y ont accès.")
                     </p>
                     <p class="text-secondary">
-                        Une cible groupe ou profil peut être restreinte à une entité, et s'étendre ou non à ses
-                        sous-entités : sans cette portée, cibler un profil ouvrirait l'article à ce profil dans
-                        toutes les entités à la fois.
+                        @T("Une cible groupe ou profil peut être restreinte à une entité, et s'étendre ou non à ses sous-entités : sans cette portée, cibler un profil ouvrirait l'article à ce profil dans toutes les entités à la fois.")
                     </p>
 
                     <div class="row g-2 align-items-end mb-3">
                         <div class="col-auto">
-                            <label class="form-label" for="kb-target-kind">Type de cible</label>
+                            <label class="form-label" for="kb-target-kind">@T("Type de cible")</label>
                             <select id="kb-target-kind" class="form-select" value="@_newTargetKind"
                                     @onchange="@((ChangeEventArgs e) => SetTargetKindAsync((string?)e.Value))">
-                                <option value="@nameof(PrincipalKind.Entity)">Entité</option>
-                                <option value="@nameof(PrincipalKind.Group)">Groupe</option>
-                                <option value="@nameof(PrincipalKind.Profile)">Profil</option>
-                                <option value="@nameof(PrincipalKind.User)">Utilisateur</option>
+                                <option value="@nameof(PrincipalKind.Entity)">@T("Entité")</option>
+                                <option value="@nameof(PrincipalKind.Group)">@T("Groupe")</option>
+                                <option value="@nameof(PrincipalKind.Profile)">@T("Profil")</option>
+                                <option value="@nameof(PrincipalKind.User)">@T("Utilisateur")</option>
                             </select>
                         </div>
                         <div class="col-auto">
-                            <label class="form-label" for="kb-target-item">Cible</label>
+                            <label class="form-label" for="kb-target-item">@T("Cible")</label>
                             <select id="kb-target-item" class="form-select" style="min-width: 16rem;" value="@_newTargetItemId"
                                     @onchange="@((ChangeEventArgs e) => _newTargetItemId = (string?)e.Value ?? string.Empty)">
-                                <option value="">Choisir...</option>
+                                <option value="">@T("Choisir...")</option>
                                 @foreach (PrincipalOption option in _targetOptions)
                                 {
                                     <option value="@option.Id">@option.Name</option>
@@ -285,10 +280,10 @@ else if (_article is not null)
                         @if (ScopeApplies)
                         {
                             <div class="col-auto">
-                                <label class="form-label" for="kb-target-scope">Dans l'entité</label>
+                                <label class="form-label" for="kb-target-scope">@T("Dans l'entité")</label>
                                 <select id="kb-target-scope" class="form-select" style="min-width: 12rem;" value="@_newTargetScopeEntityId"
                                         @onchange="@((ChangeEventArgs e) => _newTargetScopeEntityId = (string?)e.Value ?? string.Empty)">
-                                    <option value="">Toute l'installation</option>
+                                    <option value="">@T("Toute l'installation")</option>
                                     @foreach (PrincipalOption option in _entityOptions)
                                     {
                                         <option value="@option.Id">@option.Name</option>
@@ -302,29 +297,29 @@ else if (_article is not null)
                                 <label class="form-check mb-2">
                                     <input class="form-check-input" type="checkbox" checked="@_newTargetRecursive"
                                            @onchange="@((ChangeEventArgs e) => _newTargetRecursive = (bool?)e.Value ?? false)" />
-                                    <span class="form-check-label">Et sous-entités</span>
+                                    <span class="form-check-label">@T("Et sous-entités")</span>
                                 </label>
                             </div>
                         }
                         <div class="col-auto">
                             <button type="button" class="btn btn-primary" disabled="@(_newTargetItemId.Length == 0)" @onclick="AddTargetAsync">
-                                <i class="ti ti-plus me-1"></i>Ajouter
+                                <i class="ti ti-plus me-1"></i>@T("Ajouter")
                             </button>
                         </div>
                     </div>
 
                     @if (_article.Targets.Count == 0)
                     {
-                        <div class="text-secondary">Aucune cible : article visible de tous.</div>
+                        <div class="text-secondary">@T("Aucune cible : article visible de tous.")</div>
                     }
                     else
                     {
                         <table class="table table-vcenter">
                             <thead>
                                 <tr>
-                                    <th>Type</th>
-                                    <th>Cible</th>
-                                    <th>Portée</th>
+                                    <th>@T("Type")</th>
+                                    <th>@T("Cible")</th>
+                                    <th>@T("Portée")</th>
                                     <th class="w-1"></th>
                                 </tr>
                             </thead>
@@ -336,7 +331,7 @@ else if (_article is not null)
                                         <td>@TargetName(target)</td>
                                         <td class="text-secondary">@TargetScopeLabel(target)</td>
                                         <td>
-                                            <button type="button" class="btn btn-icon btn-ghost-danger" title="Retirer cette cible"
+                                            <button type="button" class="btn btn-icon btn-ghost-danger" title="@(T("Retirer cette cible"))"
                                                     @onclick="() => RemoveTargetAsync(target)">
                                                 <i class="ti ti-trash"></i>
                                             </button>
@@ -351,7 +346,7 @@ else if (_article is not null)
                 case "revisions":
                     @if (_revisions.Count == 0)
                     {
-                        <div class="text-secondary">Aucune révision : l'article n'a pas été modifié depuis sa rédaction.</div>
+                        <div class="text-secondary">@T("Aucune révision : l'article n'a pas été modifié depuis sa rédaction.")</div>
                     }
                     else
                     {
@@ -359,9 +354,9 @@ else if (_article is not null)
                             <thead>
                                 <tr>
                                     <th class="w-1">N°</th>
-                                    <th>Archivée le</th>
-                                    <th>Par</th>
-                                    <th>Sujet d'alors</th>
+                                    <th>@T("Archivée le")</th>
+                                    <th>@T("Par")</th>
+                                    <th>@T("Sujet d'alors")</th>
                                     <th class="w-1"></th>
                                 </tr>
                             </thead>
@@ -376,10 +371,10 @@ else if (_article is not null)
                                         <td class="text-nowrap">
                                             <button type="button" class="btn btn-sm" @onclick="() => ToggleRevision(revision.Id)">
                                                 <i class="ti @(_openRevisionId == revision.Id ? "ti-eye-off" : "ti-eye") me-1"></i>
-                                                @(_openRevisionId == revision.Id ? "Masquer" : "Voir")
+                                                @(_openRevisionId == revision.Id ? T("Masquer") : T("Voir"))
                                             </button>
                                             <button type="button" class="btn btn-sm" @onclick="() => RestoreRevisionAsync(revision)">
-                                                <i class="ti ti-history me-1"></i>Restaurer
+                                                <i class="ti ti-history me-1"></i>@T("Restaurer")
                                             </button>
                                         </td>
                                     </tr>
@@ -400,22 +395,21 @@ else if (_article is not null)
 
                 case "documents":
                     <p class="text-secondary">
-                        Fichiers rattachés à l'article. Un document est une fiche globale, partageable entre
-                        plusieurs objets : le détacher d'ici ne le supprime pas de l'installation.
+                        @T("Fichiers rattachés à l'article. Un document est une fiche globale, partageable entre plusieurs objets : le détacher d'ici ne le supprime pas de l'installation.")
                     </p>
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-5">
-                            <label class="form-label" for="kb-doc-upload">Téléverser un fichier</label>
+                            <label class="form-label" for="kb-doc-upload">@T("Téléverser un fichier")</label>
                             <InputFile id="kb-doc-upload" class="form-control" OnChange="UploadDocumentAsync" disabled="@_isUploading" />
                         </div>
                         <div class="col-md-7">
-                            <label class="form-label" for="kb-doc-search">Ou rattacher un document existant</label>
+                            <label class="form-label" for="kb-doc-search">@T("Ou rattacher un document existant")</label>
                             <div class="input-group">
                                 <input id="kb-doc-search" class="form-control" @bind="_documentSearch" @bind:event="oninput"
-                                       placeholder="Nom ou nom de fichier" />
+                                       placeholder="@(T("Nom ou nom de fichier"))" />
                                 <button type="button" class="btn" @onclick="SearchDocumentsAsync">
-                                    <i class="ti ti-search me-1"></i>Chercher
+                                    <i class="ti ti-search me-1"></i>@T("Chercher")
                                 </button>
                             </div>
                         </div>
@@ -423,7 +417,7 @@ else if (_article is not null)
 
                     @if (_isUploading)
                     {
-                        <div class="text-secondary mb-3"><i class="ti ti-loader me-1"></i>Téléversement en cours…</div>
+                        <div class="text-secondary mb-3"><i class="ti ti-loader me-1"></i>@T("Téléversement en cours…")</div>
                     }
 
                     @if (_uploadError is { Length: > 0 } uploadError)
@@ -441,7 +435,7 @@ else if (_article is not null)
                                         <i class="ti ti-file"></i>
                                         <span class="flex-fill">@candidate.Name <span class="text-secondary small">(@candidate.FileName)</span></span>
                                         <button type="button" class="btn btn-sm" @onclick="() => AttachDocumentAsync(candidate)">
-                                            <i class="ti ti-link me-1"></i>Rattacher
+                                            <i class="ti ti-link me-1"></i>@T("Rattacher")
                                         </button>
                                     </div>
                                 }
@@ -451,7 +445,7 @@ else if (_article is not null)
 
                     @if (_documents.Count == 0)
                     {
-                        <div class="text-secondary">Aucun document rattaché.</div>
+                        <div class="text-secondary">@T("Aucun document rattaché.")</div>
                     }
                     else
                     {
@@ -459,10 +453,10 @@ else if (_article is not null)
                             <table class="table table-vcenter">
                                 <thead>
                                     <tr>
-                                        <th>Nom</th>
-                                        <th>Fichier</th>
-                                        <th>Taille</th>
-                                        <th>Ajouté le</th>
+                                        <th>@T("Nom")</th>
+                                        <th>@T("Fichier")</th>
+                                        <th>@T("Taille")</th>
+                                        <th>@T("Ajouté le")</th>
                                         <th class="w-1"></th>
                                     </tr>
                                 </thead>
@@ -479,17 +473,17 @@ else if (_article is not null)
                                                 {
                                                     @* Fiche importée sans son fichier : le proposer au téléchargement
                                                        ne donnerait qu'une erreur. *@
-                                                    <span class="badge bg-orange-lt" title="Fichier absent : importé sans accès au dossier files/ de GLPI">
-                                                        <i class="ti ti-file-off me-1"></i>Sans fichier
+                                                    <span class="badge bg-orange-lt" title="@(T("Fichier absent : importé sans accès au dossier files/ de GLPI"))">
+                                                        <i class="ti ti-file-off me-1"></i>@T("Sans fichier")
                                                     </span>
                                                 }
                                                 else
                                                 {
                                                     <a class="btn btn-sm" href="@DocumentUrl(document)" target="_blank" rel="noopener">
-                                                        <i class="ti ti-download me-1"></i>Télécharger
+                                                        <i class="ti ti-download me-1"></i>@T("Télécharger")
                                                     </a>
                                                 }
-                                                <button type="button" class="btn btn-icon btn-ghost-danger" title="Détacher de cet article"
+                                                <button type="button" class="btn btn-icon btn-ghost-danger" title="@(T("Détacher de cet article"))"
                                                         @onclick="() => DetachDocumentAsync(document)">
                                                     <i class="ti ti-unlink"></i>
                                                 </button>
@@ -504,24 +498,23 @@ else if (_article is not null)
 
                 case "notes":
                     <p class="text-secondary">
-                        Notes libres attachées à l'article. Elles ne font pas partie de son contenu et ne sont
-                        pas reprises dans les révisions : c'est le carnet de bord de ceux qui l'entretiennent.
+                        @T("Notes libres attachées à l'article. Elles ne font pas partie de son contenu et ne sont pas reprises dans les révisions : c'est le carnet de bord de ceux qui l'entretiennent.")
                     </p>
 
                     <div class="mb-3">
-                        <label class="form-label" for="kb-new-note">Ajouter une note</label>
+                        <label class="form-label" for="kb-new-note">@T("Ajouter une note")</label>
                         <textarea id="kb-new-note" class="form-control" rows="3"
-                                  placeholder="Remarque, contexte, rappel…"
+                                  placeholder="@(T("Remarque, contexte, rappel…"))"
                                   @bind="_newNote" @bind:event="oninput"></textarea>
                         <button type="button" class="btn btn-primary mt-2"
                                 disabled="@string.IsNullOrWhiteSpace(_newNote)" @onclick="AddNoteAsync">
-                            <i class="ti ti-plus me-1"></i>Ajouter
+                            <i class="ti ti-plus me-1"></i>@T("Ajouter")
                         </button>
                     </div>
 
                     @if (_notes.Count == 0)
                     {
-                        <div class="text-secondary">Aucune note.</div>
+                        <div class="text-secondary">@T("Aucune note.")</div>
                     }
                     else
                     {
@@ -536,9 +529,9 @@ else if (_article is not null)
                                         <div class="mt-2">
                                             <button type="button" class="btn btn-primary btn-sm"
                                                     disabled="@string.IsNullOrWhiteSpace(_editingNote)" @onclick="SaveNoteAsync">
-                                                Enregistrer
+                                                @T("Enregistrer")
                                             </button>
-                                            <button type="button" class="btn btn-sm" @onclick="CancelEditNote">Annuler</button>
+                                            <button type="button" class="btn btn-sm" @onclick="CancelEditNote">@T("Annuler")</button>
                                         </div>
                                     }
                                     else
@@ -556,17 +549,17 @@ else if (_article is not null)
                                                 @if (note.UpdatedAt is { } updated)
                                                 {
                                                     <span class="ms-2">
-                                                        <i class="ti ti-pencil me-1"></i>Modifiée le @Display.DateTime(updated)
+                                                        <i class="ti ti-pencil me-1"></i>@T("Modifiée le {0}", Display.DateTime(updated))
                                                         @if (note.LastEditorName is { Length: > 0 } editor)
                                                         {
-                                                            <text> par @editor</text>
+                                                            <text> @T("par {0}", editor)</text>
                                                         }
                                                     </span>
                                                 }
                                             </div>
 
                                             <div class="text-nowrap">
-                                                <button type="button" class="btn btn-icon btn-sm" title="Modifier"
+                                                <button type="button" class="btn btn-icon btn-sm" title="@(T("Modifier"))"
                                                         @onclick="() => StartEditNote(note)">
                                                     <i class="ti ti-pencil"></i>
                                                 </button>
@@ -574,16 +567,16 @@ else if (_article is not null)
                                                 {
                                                     <button type="button" class="btn btn-sm btn-danger"
                                                             @onclick="() => DeleteNoteAsync(note.Id)">
-                                                        Confirmer
+                                                        @T("Confirmer")
                                                     </button>
                                                     <button type="button" class="btn btn-sm"
                                                             @onclick="() => _confirmDeleteNoteId = null">
-                                                        Annuler
+                                                        @T("Annuler")
                                                     </button>
                                                 }
                                                 else
                                                 {
-                                                    <button type="button" class="btn btn-icon btn-sm btn-ghost-danger" title="Supprimer"
+                                                    <button type="button" class="btn btn-icon btn-sm btn-ghost-danger" title="@(T("Supprimer"))"
                                                             @onclick="() => _confirmDeleteNoteId = note.Id">
                                                         <i class="ti ti-trash"></i>
                                                     </button>
@@ -599,13 +592,12 @@ else if (_article is not null)
 
                 case "history":
                     <p class="text-secondary">
-                        Toutes les modifications de l'article : contenu, classement, drapeaux, dates de visibilité
-                        et cibles. Les révisions, elles, n'archivent que le texte — pour le restaurer.
+                        @T("Toutes les modifications de l'article : contenu, classement, drapeaux, dates de visibilité et cibles. Les révisions, elles, n'archivent que le texte — pour le restaurer.")
                     </p>
 
                     @if (_historyEntries.Count == 0)
                     {
-                        <div class="text-secondary">Aucun historique.</div>
+                        <div class="text-secondary">@T("Aucun historique.")</div>
                     }
                     else
                     {
@@ -613,11 +605,11 @@ else if (_article is not null)
                             <table class="table table-vcenter">
                                 <thead>
                                     <tr>
-                                        <th class="w-1">ID</th>
-                                        <th>Date</th>
-                                        <th>Utilisateur</th>
-                                        <th>Champ</th>
-                                        <th>Mise à jour</th>
+                                        <th class="w-1">@T("ID")</th>
+                                        <th>@T("Date")</th>
+                                        <th>@T("Utilisateur")</th>
+                                        <th>@T("Champ")</th>
+                                        <th>@T("Mise à jour")</th>
                                     </tr>
                                 </thead>
                                 <tbody>
