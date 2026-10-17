@@ -28,7 +28,7 @@
       bibliothèque de référence de l'écosystème .NET ; son mode "sans HTML brut" est ce qui permet
       de rendre du contenu rédigé par un utilisateur sans avoir à assainir du HTML après coup.
     -->
-    <PackageReference Include="Markdig" Version="1.3.2" />
+    <PackageReference Include="Markdig" Version="1.4.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
     <!-- ToastService (confirmations/erreurs de formulaire), comme les pages des autres modules. -->
