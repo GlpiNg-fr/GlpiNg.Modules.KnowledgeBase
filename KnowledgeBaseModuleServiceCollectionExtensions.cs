@@ -38,6 +38,9 @@ public static class KnowledgeBaseModuleServiceCollectionExtensions
         // KnowledgeBaseReportProvider.
         services.AddScoped<IReportProvider, KnowledgeBaseReportProvider>();
 
+        // Articles (visibilité appliquée), cibles des onglets de rattachement.
+        services.AddScoped<GlpiNg.Modules.Abstractions.Items.IRelationTargetSource, GlpiNg.Modules.KnowledgeBase.Services.RelationTargetSource>();
+
         return services;
     }
 }
